@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 set -e
-WORKING_DIR=$(readlink -f $(dirname $0))
-cd $WORKING_DIR
+
+cd -Pe $(dirname $0)
+WORKING_DIR=$(pwd)
 
 usage() {
   cat <<EOF

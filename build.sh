@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-cd $(readlink -f $(dirname $0))
+
+cd -Pe $(dirname $0)
 BASE_DIR=$(pwd)
+
 export PATH=$BASE_DIR:$PATH
 trap onExit EXIT
 
@@ -32,7 +34,7 @@ if [ -f /flyway/flyway ]; then FLYWAY="bash /flyway/flyway"; fi
 #
 # To support local testing, add a local install to the front of the path
 #
-LOCAL_INSTALL=$(find -maxdepth 1 -name "flyway-[67]*" | sort -V | head -1)
+LOCAL_INSTALL=$(find . -maxdepth 1 -name "flyway-[67]*" | sort -V | head -1)
 if [ -n "$LOCAL_INSTALL" ]
 then
   if [[ "$LOCAL_INSTALL" == *flyway-6* ]]; then echo "WARNING: Upgrade Flyway To Version 7"; fi;
