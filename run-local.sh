@@ -13,8 +13,7 @@ Usage:
 
   Commands:
     help      Opens this menu
-    clean     Drops/Rebuilds the tables in an already existing database
-    start     Creates a brand new database and loads it
+    clean     Create and populate a new database docker image
 
 EOF
 exit 1
@@ -23,11 +22,9 @@ exit 1
 main() {
   case "$1" in
     help|[-]*help) usage "I cant even with this...";;
-    start) createDatabase; shift; break;;
+    clean|start) createDatabase; shift; break;;
   esac
-
   syntheticRecordsBuilder
-
   loadDatabase $@
 }
 
@@ -38,6 +35,9 @@ syntheticRecordsBuilder() {
 }
 
 createDatabase() {
+  echo "stop and remove dqdb"
+  docker stop "dqdb" || true && docker rm "dqdb" || true
+
   # SQL Server Docker Image (You don't have to install anything!!!)
   docker pull mcr.microsoft.com/mssql/server:2017-latest
 

@@ -10,22 +10,13 @@ It also provides tools for building reproducible (MITRE) databases filled with s
 1. Docker
 2. [Flyway](https://flywaydb.org/download/)
 
-
-##### Populating the Database
+##### Launching the Database
 
 1. Download Flyway and unzip it in the root of this repository
-2. Use `./run-local.sh start` to create the database (as a docker image) and populate it
+2. Use `./run-local.sh clean` to create a new database (as a docker image) and populate it
 
-
-##### Repopulating the Database
-
-An existing database can be repopulated through one of two methods:
-1. Update
-    * `./run-local.sh`
-    * Updating the database will update the already existing records with any changes/new data.
-2. Clean
-    * `./run-local.sh clean`
-    * Cleaning will drop the cuurently existing tables and do a fresh load of the data.
+To populate an existing database, retaining existing schema and records, use `./run-local.sh`
+with no arguments.
 
 You can control the resources updated for the local development using `RESOURCES` environment
 variable to be a CSV list of resources classes to update.

@@ -40,6 +40,7 @@ then
   if [[ "$LOCAL_INSTALL" == *flyway-6* ]]; then echo "WARNING: Upgrade Flyway To Version 7"; fi;
   export PATH="$LOCAL_INSTALL:$PATH"
 fi
+
 #
 # Load environment specific configuration. See local.conf as an example
 # of variables that need to be set.
@@ -82,21 +83,6 @@ announce() {
 BOOTSTRAP_DB_HACK="IF DB_ID (N'$BOOTSTRAP_DB') IS NULL CREATE DATABASE $BOOTSTRAP_DB"
 $FLYWAY info -q -url="${FLYWAY_BASE_URL}" -initSql="$BOOTSTRAP_DB_HACK"
 
-#
-# To support local testing, if 'clean' supplied, then the existing
-# database will be reset.
-#
-if [ "${1:-}" == "clean" ]
-then
-  announce "Cleaning database"
-  FORCE_HACK="IF OBJECT_ID('[dbo].[flyway_schema_history_cleaner]','U') IS NOT NULL DELETE FROM [dbo].[flyway_schema_history_cleaner];"
-  $FLYWAY migrate \
-    -url="${FLYWAY_BASE_URL};databaseName=$BOOTSTRAP_DB" \
-    -table=flyway_schema_history_cleaner \
-    -locations='filesystem:db/destroyer' \
-    -initSql="$FORCE_HACK"
-fi
-
 runDataQueryTests() {
   if [[ "${ENVIRONMENT}" != "qa" && "${ENVIRONMENT}" != "staging-lab" && "${ENVIRONMENT}" != "lab" ]]
   then
@@ -131,19 +117,19 @@ runDataQueryTests() {
 #
 announce "Bootstrapping database"
 $FLYWAY migrate \
-    -url="${FLYWAY_BASE_URL};databaseName=$BOOTSTRAP_DB" \
-    -table=flyway_schema_history \
-    -locations='filesystem:db/bootstrap'
+  -url="${FLYWAY_BASE_URL};databaseName=$BOOTSTRAP_DB" \
+  -table=flyway_schema_history \
+  -locations='filesystem:db/bootstrap'
 
 #
 # Now apply migrations
 #
 announce "Migrating Database"
 $FLYWAY migrate \
-    -url="${FLYWAY_BASE_URL};databaseName=$FLYWAY_PLACEHOLDERS_DB_NAME" \
-    -table=flyway_schema_history \
-    -locations='filesystem:db/migration' \
-    -schemas=app
+  -url="${FLYWAY_BASE_URL};databaseName=$FLYWAY_PLACEHOLDERS_DB_NAME" \
+  -table=flyway_schema_history \
+  -locations='filesystem:db/migration' \
+  -schemas=app
 
 DATAMART_DIR=$BASE_DIR/datamart
 

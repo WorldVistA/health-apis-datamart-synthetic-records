@@ -45,7 +45,6 @@ pipeline {
     timestamps()
   }
   parameters {
-    booleanParam(name: 'CLEAN', defaultValue: false, description: "Remove existing database and start from scratch.")
     booleanParam(name: 'RUN_DATA_QUERY_TESTS', defaultValue: true, description: "Run data-query-tests after loading the database.")
   }
   agent {
@@ -58,23 +57,8 @@ pipeline {
     ENVIRONMENT = "${["qa", "staging_lab", "lab"].contains(env.BRANCH_NAME) ? env.BRANCH_NAME.replaceAll('_','-') : "i-cant-even-w-this"}"
   }
   stages {
-    stage('Clean') {
-      when {
-        beforeInput true
-        expression { return env.CLEAN == 'true'}
-      }
-      input {
-        message "Rub-a-dub-dub..."
-        ok "Database will be cleaned before inserting records..."
-        submitter "bryan.schofield,ian.laflamme,aparcel-va,eclendenning,joshua.hulbert"
-      }
-      steps {
-        saunter('./build.sh clean')
-      }
-    }
     stage('Build') {
       when {
-        expression { return env.CLEAN != 'true' }
         expression { return env.ENVIRONMENT != 'i-cant-even-w-this' }
       }
       steps {
