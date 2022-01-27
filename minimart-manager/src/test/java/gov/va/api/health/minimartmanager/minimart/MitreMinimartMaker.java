@@ -320,8 +320,11 @@ public class MitreMinimartMaker {
                 : Instant.now();
         checkState(dm.lastUpdated() == null);
         dm.lastUpdated(lastUpdated.truncatedTo(ChronoUnit.MILLIS));
+        CompositeCdwId compositeCdwId = CompositeCdwId.fromCdwId(dm.cdwId());
         return ObservationEntity.builder()
             .cdwId(dm.cdwId())
+            .cdwIdNumber(compositeCdwId.cdwIdNumber())
+            .cdwIdResourceCode(compositeCdwId.cdwIdResourceCode())
             .icn(dm.subject().isPresent() ? patientIcn(dm.subject().get()) : null)
             .lastUpdated(dm.lastUpdated())
             .dateUtc(dm.effectiveDateTime().orElse(null))
