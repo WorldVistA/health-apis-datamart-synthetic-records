@@ -381,6 +381,7 @@ public class MitreMinimartMaker {
         return PractitionerEntity.builder()
             .cdwIdNumber(compositeCdwId.cdwIdNumber())
             .cdwIdResourceCode(compositeCdwId.cdwIdResourceCode())
+            .icn(dm.fullIcn())
             .npi(dm.npi().orElse(null))
             .familyName(dm.name().family())
             .givenName(dm.name().given())
