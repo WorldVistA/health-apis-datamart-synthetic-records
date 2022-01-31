@@ -1,0 +1,14 @@
+ALTER TABLE [App].[Observation] ALTER COLUMN [CDWIdNumber] BIGINT NOT NULL
+GO
+
+ALTER TABLE [App].[Observation] ALTER COLUMN [CDWIdResourceCode] CHAR(1) NOT NULL
+GO
+
+ALTER TABLE [App].[Observation] DROP CONSTRAINT PK_Observation
+GO
+
+ALTER TABLE [App].[Observation] ADD CONSTRAINT PK_Observation PRIMARY KEY CLUSTERED (CDWIdNumber, CDWIdResourceCode)
+GO
+
+ALTER TABLE [App].[Observation] ALTER COLUMN [CDWId] VARCHAR(26) NULL
+GO
