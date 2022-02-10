@@ -286,12 +286,8 @@ public class MitreMinimartMaker {
 
   private final Function<DatamartMedicationOrder, MedicationOrderEntity> toMedicationOrderEntity =
       dm -> {
-        CompositeCdwId compositeCdwId =
-            dm.cdwId().endsWith(":FP")
-                ? CompositeCdwId.fromCdwId(dm.cdwId().substring(0, dm.cdwId().length() - 3) + ":O")
-                : CompositeCdwId.fromCdwId(dm.cdwId());
+        CompositeCdwId compositeCdwId = CompositeCdwId.fromCdwId(dm.cdwId());
         return MedicationOrderEntity.builder()
-            .cdwId(dm.cdwId())
             .cdwIdNumber(compositeCdwId.cdwIdNumber())
             .cdwIdResourceCode(compositeCdwId.cdwIdResourceCode())
             .icn(patientIcn(dm.patient()))
@@ -304,7 +300,6 @@ public class MitreMinimartMaker {
           dm -> {
             CompositeCdwId compositeCdwId = CompositeCdwId.fromCdwId(dm.cdwId());
             return MedicationStatementEntity.builder()
-                .cdwId(dm.cdwId())
                 .cdwIdNumber(compositeCdwId.cdwIdNumber())
                 .cdwIdResourceCode(compositeCdwId.cdwIdResourceCode())
                 .icn(patientIcn(dm.patient()))
@@ -322,7 +317,6 @@ public class MitreMinimartMaker {
         dm.lastUpdated(lastUpdated.truncatedTo(ChronoUnit.MILLIS));
         CompositeCdwId compositeCdwId = CompositeCdwId.fromCdwId(dm.cdwId());
         return ObservationEntity.builder()
-            .cdwId(dm.cdwId())
             .cdwIdNumber(compositeCdwId.cdwIdNumber())
             .cdwIdResourceCode(compositeCdwId.cdwIdResourceCode())
             .icn(dm.subject().isPresent() ? patientIcn(dm.subject().get()) : null)
