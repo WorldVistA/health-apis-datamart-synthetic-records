@@ -55,7 +55,7 @@ public class GenerateCsv {
 
   private final Function<DatamartAllergyIntolerance, List<String>> toAllergyIntoleranceCsv =
       datamartAllergyIntolerance -> {
-        List<String> csvOutput = new ArrayList<>(11);
+        var csvOutput = new ArrayList<String>(11);
         csvOutput.add("PatientEmail");
         // Use the patient map to find the patient's name and birthdate by ICN
         var icn = datamartAllergyIntolerance.patient().reference().orElse("");
@@ -92,7 +92,7 @@ public class GenerateCsv {
       };
 
   static File importDirectory() {
-    String importDirectoryPath = System.getProperty("import.directory");
+    var importDirectoryPath = System.getProperty("import.directory");
     if (isBlank(importDirectoryPath)) {
       throw new IllegalStateException("import.directory not specified");
     }
@@ -103,6 +103,7 @@ public class GenerateCsv {
     var map = new HashMap<String, DatamartPatient>();
     MakerUtils.findUniqueFiles(
             importDirectory(), DatamartFilenamePatterns.get().json(DatamartPatient.class))
+        .stream()
         .map(f -> MakerUtils.fileToDatamart(MAPPER, f, DatamartPatient.class))
         .forEach(dmPatient -> map.put(dmPatient.fullIcn(), dmPatient));
     return map;
@@ -111,7 +112,7 @@ public class GenerateCsv {
   @Test
   @SneakyThrows
   void createCsv() {
-    try (CSVPrinter printer =
+    try (var printer =
         new CSVPrinter(new FileWriter(CSV_NAME), CSVFormat.DEFAULT.withHeader(CSV_HEADERS))) {
       // per resource, add the datamart records found in the import directory to the csv file.
       var resourcesToUpdate = RESOURCES;
@@ -145,8 +146,7 @@ public class GenerateCsv {
   <DM extends HasReplaceableId> List<List<String>> toCsvRecords(
       File directory, Class<DM> resourceType, Function<DM, List<String>> toDatamartCsv) {
     return MakerUtils.findUniqueFiles(directory, DatamartFilenamePatterns.get().json(resourceType))
-        .sorted()
-        .parallel()
+        .parallelStream()
         .map(f -> toDatamartCsv.apply(MakerUtils.fileToDatamart(MAPPER, f, resourceType)))
         .collect(toList());
   }

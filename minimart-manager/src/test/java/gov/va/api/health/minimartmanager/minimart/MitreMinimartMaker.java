@@ -550,8 +550,8 @@ public class MitreMinimartMaker {
 
   private Stream<File> findUniqueFiles(File dmDirectory, String filePattern) {
     var uniqueFiles = MakerUtils.findUniqueFiles(dmDirectory, filePattern);
-    totalRecords = (int) uniqueFiles.count();
-    return uniqueFiles;
+    totalRecords = uniqueFiles.size();
+    return uniqueFiles.stream();
   }
 
   private EntityManager getEntityManager() {
