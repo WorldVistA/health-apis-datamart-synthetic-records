@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.va.api.health.autoconfig.configuration.JacksonConfig;
 import gov.va.api.health.dataquery.service.controller.CompositeCdwIds;
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.AllergyIntoleranceEntity;
@@ -58,7 +59,6 @@ import gov.va.api.lighthouse.datamart.DatamartReference;
 import gov.va.api.lighthouse.datamart.HasReplaceableId;
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -67,11 +67,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -87,6 +85,8 @@ import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class MitreMinimartMaker {
+  private static final ObjectMapper MAPPER = JacksonConfig.createMapper();
+
   private static final List<Class<?>> MANAGED_CLASSES =
       Arrays.asList(
           AllergyIntoleranceEntity.class,
@@ -526,7 +526,7 @@ public class MitreMinimartMaker {
 
   @SneakyThrows
   private String datamartToString(HasReplaceableId e) {
-    return JacksonConfig.createMapper().writeValueAsString(e);
+    return MAPPER.writeValueAsString(e);
   }
 
   public int deleteAllSpecialtiesByPractitionerRole(CompositeCdwId praRolCdwId) {
@@ -544,31 +544,12 @@ public class MitreMinimartMaker {
   }
 
   @SneakyThrows
-  private <R extends HasReplaceableId> R fileToDatamart(File f, Class<R> objectType) {
-    return JacksonConfig.createMapper().readValue(f, objectType);
-  }
-
-  @SneakyThrows
   private String fileToString(File file) {
     return new String(Files.readAllBytes(Paths.get(file.getPath())));
   }
 
-  @SneakyThrows
   private Stream<File> findUniqueFiles(File dmDirectory, String filePattern) {
-    List<File> files =
-        Files.walk(dmDirectory.toPath())
-            .map(Path::toFile)
-            .filter(File::isFile)
-            .filter(f -> f.getName().matches(filePattern))
-            .collect(toList());
-    Set<String> fileNames = new HashSet<>();
-    List<File> uniqueFiles = new ArrayList<>();
-    for (File file : files) {
-      if (fileNames.add(file.getName())) {
-        uniqueFiles.add(file);
-      }
-    }
-    log.info("{} unique files found", uniqueFiles.size());
+    var uniqueFiles = MakerUtils.findUniqueFiles(dmDirectory, filePattern);
     totalRecords = uniqueFiles.size();
     return uniqueFiles.stream();
   }
@@ -584,8 +565,7 @@ public class MitreMinimartMaker {
 
   @SneakyThrows
   private void insertByPractitionerRoleSpecialtyMapping(File file) {
-    DatamartPractitionerRole dm =
-        JacksonConfig.createMapper().readValue(file, DatamartPractitionerRole.class);
+    DatamartPractitionerRole dm = MAPPER.readValue(file, DatamartPractitionerRole.class);
     var entities = toPractitionerRoleSpecialtyMapEntities.apply(dm);
     entities.stream()
         .parallel()
@@ -774,7 +754,7 @@ public class MitreMinimartMaker {
           .parallel()
           .forEach(
               f -> {
-                DM dm = fileToDatamart(f, resourceType);
+                DM dm = MakerUtils.fileToDatamart(MAPPER, f, resourceType);
                 E entity = toDatamartEntity.apply(dm);
                 save(entity);
                 post.accept(entity);
