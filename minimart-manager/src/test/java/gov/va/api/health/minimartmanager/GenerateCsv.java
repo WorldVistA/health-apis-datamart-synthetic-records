@@ -1,9 +1,10 @@
 package gov.va.api.health.minimartmanager;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.va.api.health.autoconfig.configuration.JacksonConfig;
@@ -15,8 +16,11 @@ import gov.va.api.lighthouse.datamart.DatamartCoding;
 import gov.va.api.lighthouse.datamart.HasReplaceableId;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +34,8 @@ import org.junit.jupiter.api.Test;
 
 @Slf4j
 public class GenerateCsv {
-  private static final ObjectMapper MAPPER = JacksonConfig.createMapper();
-
-  private static final Map<String, DatamartPatient> PATIENT_MAP = loadPatients();
-
-  private static final String CSV_NAME = "health-test-patient-data.csv";
+  /** Resources to generate csv entries. To be filled out over time */
+  private static final List<String> ALL_RESOURCES = List.of("AllergyIntolerance");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -50,46 +51,54 @@ public class GenerateCsv {
     "Date"
   };
 
-  /** Resources to generate csv entries. To be filled out over time */
-  private static final List<String> RESOURCES = List.of("AllergyIntolerance");
+  private static final String CSV_NAME = "health-test-patient-data.csv";
+
+  private static final Map<String, String> ICN_TO_EMAIL = loadEmails();
+
+  private static final Map<String, DatamartPatient> ICN_TO_PATIENT = loadPatients();
+
+  private static final ObjectMapper MAPPER = JacksonConfig.createMapper();
 
   private final Function<DatamartAllergyIntolerance, List<String>> toAllergyIntoleranceCsv =
-      datamartAllergyIntolerance -> {
-        var csvOutput = new ArrayList<String>(11);
-        csvOutput.add("PatientEmail");
-        // Use the patient map to find the patient's name and birthdate by ICN
-        var icn = datamartAllergyIntolerance.patient().reference().orElse("");
-        var dmPatient = PATIENT_MAP.get(icn);
-        checkNotNull(dmPatient);
-        csvOutput.add(icn);
-        csvOutput.add(dmPatient.name());
-        csvOutput.add(dmPatient.birthDateTime().substring(0, 10));
-        csvOutput.add("AllergyIntolerance");
-        csvOutput.add(
-            datamartAllergyIntolerance
+      dmAllergyIntolerance -> {
+        var csvRow = new ArrayList<String>(11);
+        var icn = dmAllergyIntolerance.patient().reference().get();
+        csvRow.add(getOrThrow("email", ICN_TO_EMAIL, icn));
+        csvRow.add(icn);
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        csvRow.add(dmPatient.name());
+        csvRow.add(dmPatient.birthDateTime().substring(0, 10));
+        csvRow.add("AllergyIntolerance");
+        csvRow.add(
+            dmAllergyIntolerance
                 .substance()
                 .flatMap(DatamartAllergyIntolerance.Substance::coding)
                 .flatMap(DatamartCoding::system)
                 .orElse(""));
-        csvOutput.add(
-            datamartAllergyIntolerance
+        csvRow.add(
+            dmAllergyIntolerance
                 .substance()
                 .flatMap(DatamartAllergyIntolerance.Substance::coding)
                 .flatMap(DatamartCoding::code)
                 .orElse(""));
-        csvOutput.add(
-            datamartAllergyIntolerance
+        csvRow.add(
+            dmAllergyIntolerance
                 .substance()
                 .flatMap(DatamartAllergyIntolerance.Substance::coding)
                 .flatMap(DatamartCoding::display)
                 .orElse(""));
-        csvOutput.add(datamartAllergyIntolerance.clinicalStatus().name());
-        csvOutput.add("");
-        csvOutput.add(
-            Objects.requireNonNull(datamartAllergyIntolerance.recordedDate().orElse(null))
-                .toString());
-        return csvOutput;
+        csvRow.add(dmAllergyIntolerance.clinicalStatus().name());
+        csvRow.add("");
+        csvRow.add(
+            Objects.requireNonNull(dmAllergyIntolerance.recordedDate().orElse(null)).toString());
+        return csvRow;
       };
+
+  static <T> T getOrThrow(String description, Map<String, T> map, String key) {
+    var value = map.get(key);
+    checkState(value != null, "Missing %s for %s", description, key);
+    return value;
+  }
 
   static File importDirectory() {
     var importDirectoryPath = System.getProperty("import.directory");
@@ -99,6 +108,28 @@ public class GenerateCsv {
     return new File(importDirectoryPath);
   }
 
+  @SneakyThrows
+  static Map<String, String> loadEmails() {
+    // see health_test_accounts.md in vets-api-clients
+    try (var reader =
+        new InputStreamReader(
+            GenerateCsv.class.getResourceAsStream("test-patient-emails.csv"),
+            StandardCharsets.UTF_8)) {
+      var rows = CSVFormat.DEFAULT.parse(reader);
+      var map = new HashMap<String, String>();
+      for (var row : rows) {
+        checkState(row.size() == 2);
+        var email = trimToNull(row.get(0));
+        checkState(email != null, "row %s missing email", row);
+        var icn = trimToNull(row.get(1));
+        checkState(icn != null, "row %s missing icn", row);
+        checkState(!map.containsKey(icn), "row %s duplicate icn", row);
+        map.put(icn, email);
+      }
+      return Collections.unmodifiableMap(map);
+    }
+  }
+
   static Map<String, DatamartPatient> loadPatients() {
     var map = new HashMap<String, DatamartPatient>();
     MakerUtils.findUniqueFiles(
@@ -106,7 +137,7 @@ public class GenerateCsv {
         .stream()
         .map(f -> MakerUtils.fileToDatamart(MAPPER, f, DatamartPatient.class))
         .forEach(dmPatient -> map.put(dmPatient.fullIcn(), dmPatient));
-    return map;
+    return Collections.unmodifiableMap(map);
   }
 
   @Test
@@ -115,14 +146,14 @@ public class GenerateCsv {
     try (var printer =
         new CSVPrinter(new FileWriter(CSV_NAME), CSVFormat.DEFAULT.withHeader(CSV_HEADERS))) {
       // per resource, add the datamart records found in the import directory to the csv file.
-      var resourcesToUpdate = RESOURCES;
+      var resourcesToUpdate = ALL_RESOURCES;
       var userSpecifiedResources = System.getProperty("resources");
       if (isNotBlank(userSpecifiedResources)) {
         resourcesToUpdate = Arrays.asList(userSpecifiedResources.split(",", -1));
         log.warn("Overriding default resources. Only summarizing {}", resourcesToUpdate);
       }
       var importDirectory = importDirectory();
-      for (String resource : resourcesToUpdate) {
+      for (var resource : resourcesToUpdate) {
         log.info(
             "Adding to csv file with RESOURCE: {}, IMPORT DIRECTORY: {}",
             resource,
