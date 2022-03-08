@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.va.api.health.autoconfig.configuration.JacksonConfig;
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.DatamartAllergyIntolerance;
 import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppointment;
+import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
@@ -37,7 +38,8 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 public class GenerateCsv {
   /** Resources to generate csv entries. To be filled out over time */
-  private static final List<String> ALL_RESOURCES = List.of("AllergyIntolerance", "Appointment");
+  private static final List<String> ALL_RESOURCES =
+      List.of("AllergyIntolerance", "Appointment", "Condition");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -127,6 +129,42 @@ public class GenerateCsv {
         return csvRow;
       };
 
+  private final Function<DatamartCondition, List<String>> toConditionCsv =
+      dmCondition -> {
+        var csvRow = new ArrayList<String>(11);
+        // Use the patient map to find the patient's name and birthdate by ICN
+        var icn = dmCondition.patient().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        csvRow.add(getOrThrow("email", ICN_TO_EMAIL, icn));
+        csvRow.add(icn);
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        csvRow.add(dmPatient.name());
+        csvRow.add(dmPatient.birthDateTime().substring(0, 10));
+        csvRow.add("Condition");
+
+        if (dmCondition.hasSnomedCode()) {
+          var snomed = dmCondition.snomed().get();
+          csvRow.add("SNOMED");
+          csvRow.add(snomed.code());
+          csvRow.add(snomed.display());
+        } else if (dmCondition.hasIcdCode()) {
+          var icd = dmCondition.icd().get();
+          csvRow.add("ICD");
+          csvRow.add(icd.code());
+          csvRow.add(icd.display());
+        } else {
+          csvRow.add("");
+          csvRow.add("");
+          csvRow.add("");
+        }
+        csvRow.add(dmCondition.clinicalStatus().name());
+        csvRow.add(dmCondition.category().name());
+        csvRow.add(Objects.requireNonNull(dmCondition.onsetDateTime().orElse(null)).toString());
+        return csvRow;
+      };
+
   static <T> T getOrThrow(String description, Map<String, T> map, String key) {
     var value = map.get(key);
     checkState(value != null, "Missing %s for %s", description, key);
@@ -204,6 +242,8 @@ public class GenerateCsv {
         return toCsvRecords(dir, DatamartAllergyIntolerance.class, toAllergyIntoleranceCsv);
       case "Appointment":
         return toCsvRecords(dir, DatamartAppointment.class, toAppointmentCsv);
+      case "Condition":
+        return toCsvRecords(dir, DatamartCondition.class, toConditionCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
