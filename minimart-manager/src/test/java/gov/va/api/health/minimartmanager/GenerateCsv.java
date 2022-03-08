@@ -9,10 +9,12 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.va.api.health.autoconfig.configuration.JacksonConfig;
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.DatamartAllergyIntolerance;
+import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppointment;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
 import gov.va.api.lighthouse.datamart.DatamartCoding;
+import gov.va.api.lighthouse.datamart.DatamartReference;
 import gov.va.api.lighthouse.datamart.HasReplaceableId;
 import java.io.File;
 import java.io.FileWriter;
@@ -35,7 +37,7 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 public class GenerateCsv {
   /** Resources to generate csv entries. To be filled out over time */
-  private static final List<String> ALL_RESOURCES = List.of("AllergyIntolerance");
+  private static final List<String> ALL_RESOURCES = List.of("AllergyIntolerance", "Appointment");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -53,16 +55,19 @@ public class GenerateCsv {
 
   private static final String CSV_NAME = "health-test-patient-data.csv";
 
+  private static final ObjectMapper MAPPER = JacksonConfig.createMapper();
+
   private static final Map<String, String> ICN_TO_EMAIL = loadEmails();
 
   private static final Map<String, DatamartPatient> ICN_TO_PATIENT = loadPatients();
-
-  private static final ObjectMapper MAPPER = JacksonConfig.createMapper();
 
   private final Function<DatamartAllergyIntolerance, List<String>> toAllergyIntoleranceCsv =
       dmAllergyIntolerance -> {
         var csvRow = new ArrayList<String>(11);
         var icn = dmAllergyIntolerance.patient().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
         csvRow.add(getOrThrow("email", ICN_TO_EMAIL, icn));
         csvRow.add(icn);
         var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
@@ -91,6 +96,34 @@ public class GenerateCsv {
         csvRow.add("");
         csvRow.add(
             Objects.requireNonNull(dmAllergyIntolerance.recordedDate().orElse(null)).toString());
+        return csvRow;
+      };
+
+  private final Function<DatamartAppointment, List<String>> toAppointmentCsv =
+      dmAppointment -> {
+        var csvRow = new ArrayList<String>(11);
+        // Use the patient map to find the patient's name and birthdate by ICN
+        var icn =
+            dmAppointment.participant().stream()
+                .filter(p -> "PATIENT".equalsIgnoreCase(p.type().orElse(null)))
+                .findFirst()
+                .flatMap(DatamartReference::reference)
+                .get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        csvRow.add(getOrThrow("email", ICN_TO_EMAIL, icn));
+        csvRow.add(icn);
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        csvRow.add(dmPatient.name());
+        csvRow.add(dmPatient.birthDateTime().substring(0, 10));
+        csvRow.add("Appointment");
+        csvRow.add("");
+        csvRow.add("");
+        csvRow.add(dmAppointment.description().orElse(""));
+        csvRow.add(dmAppointment.status().orElse(""));
+        csvRow.add(dmAppointment.serviceType());
+        csvRow.add(Objects.requireNonNull(dmAppointment.start().orElse(null)).toString());
         return csvRow;
       };
 
@@ -169,6 +202,8 @@ public class GenerateCsv {
     switch (resource) {
       case "AllergyIntolerance":
         return toCsvRecords(dir, DatamartAllergyIntolerance.class, toAllergyIntoleranceCsv);
+      case "Appointment":
+        return toCsvRecords(dir, DatamartAppointment.class, toAppointmentCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
@@ -179,6 +214,7 @@ public class GenerateCsv {
     return MakerUtils.findUniqueFiles(directory, DatamartFilenamePatterns.get().json(resourceType))
         .parallelStream()
         .map(f -> toDatamartCsv.apply(MakerUtils.fileToDatamart(MAPPER, f, resourceType)))
+        .filter(Objects::nonNull)
         .collect(toList());
   }
 }
