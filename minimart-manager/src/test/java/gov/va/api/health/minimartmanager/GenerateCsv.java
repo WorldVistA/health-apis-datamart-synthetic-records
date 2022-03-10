@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,7 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import lombok.Builder;
 import lombok.SneakyThrows;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -63,47 +64,42 @@ public class GenerateCsv {
 
   private static final Map<String, DatamartPatient> ICN_TO_PATIENT = loadPatients();
 
-  private final Function<DatamartAllergyIntolerance, List<String>> toAllergyIntoleranceCsv =
+  private final Function<DatamartAllergyIntolerance, CsvModel> toAllergyIntoleranceCsv =
       dmAllergyIntolerance -> {
-        var csvRow = new ArrayList<String>(11);
         var icn = dmAllergyIntolerance.patient().reference().get();
         if (!ICN_TO_EMAIL.containsKey(icn)) {
           return null;
         }
-        csvRow.add(getOrThrow("email", ICN_TO_EMAIL, icn));
-        csvRow.add(icn);
         var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
-        csvRow.add(dmPatient.name());
-        csvRow.add(dmPatient.birthDateTime().substring(0, 10));
-        csvRow.add("AllergyIntolerance");
-        csvRow.add(
-            dmAllergyIntolerance
-                .substance()
-                .flatMap(DatamartAllergyIntolerance.Substance::coding)
-                .flatMap(DatamartCoding::system)
-                .orElse(""));
-        csvRow.add(
-            dmAllergyIntolerance
-                .substance()
-                .flatMap(DatamartAllergyIntolerance.Substance::coding)
-                .flatMap(DatamartCoding::code)
-                .orElse(""));
-        csvRow.add(
-            dmAllergyIntolerance
-                .substance()
-                .flatMap(DatamartAllergyIntolerance.Substance::coding)
-                .flatMap(DatamartCoding::display)
-                .orElse(""));
-        csvRow.add(dmAllergyIntolerance.clinicalStatus().name());
-        csvRow.add("");
-        csvRow.add(
-            Objects.requireNonNull(dmAllergyIntolerance.recordedDate().orElse(null)).toString());
-        return csvRow;
+        return CsvModel.forPatient(dmPatient)
+            .resource("AllergyIntolerance")
+            .codeSystem(
+                dmAllergyIntolerance
+                    .substance()
+                    .flatMap(DatamartAllergyIntolerance.Substance::coding)
+                    .flatMap(DatamartCoding::system)
+                    .orElse(""))
+            .code(
+                dmAllergyIntolerance
+                    .substance()
+                    .flatMap(DatamartAllergyIntolerance.Substance::coding)
+                    .flatMap(DatamartCoding::code)
+                    .orElse(""))
+            .description(
+                dmAllergyIntolerance
+                    .substance()
+                    .flatMap(DatamartAllergyIntolerance.Substance::coding)
+                    .flatMap(DatamartCoding::display)
+                    .orElse(""))
+            .status(dmAllergyIntolerance.clinicalStatus().name())
+            .classification("")
+            .date(
+                Objects.requireNonNull(dmAllergyIntolerance.recordedDate().orElse(null)).toString())
+            .build();
       };
 
-  private final Function<DatamartAppointment, List<String>> toAppointmentCsv =
+  private final Function<DatamartAppointment, CsvModel> toAppointmentCsv =
       dmAppointment -> {
-        var csvRow = new ArrayList<String>(11);
         // Use the patient map to find the patient's name and birthdate by ICN
         var icn =
             dmAppointment.participant().stream()
@@ -114,55 +110,49 @@ public class GenerateCsv {
         if (!ICN_TO_EMAIL.containsKey(icn)) {
           return null;
         }
-        csvRow.add(getOrThrow("email", ICN_TO_EMAIL, icn));
-        csvRow.add(icn);
         var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
-        csvRow.add(dmPatient.name());
-        csvRow.add(dmPatient.birthDateTime().substring(0, 10));
-        csvRow.add("Appointment");
-        csvRow.add("");
-        csvRow.add("");
-        csvRow.add(dmAppointment.description().orElse(""));
-        csvRow.add(dmAppointment.status().orElse(""));
-        csvRow.add(dmAppointment.serviceType());
-        csvRow.add(Objects.requireNonNull(dmAppointment.start().orElse(null)).toString());
-        return csvRow;
+        return CsvModel.forPatient(dmPatient)
+            .resource("Appointment")
+            .codeSystem("")
+            .code("")
+            .description(dmAppointment.description().orElse(""))
+            .status(dmAppointment.status().orElse(""))
+            .classification(dmAppointment.serviceType())
+            .date(Objects.requireNonNull(dmAppointment.start().orElse(null)).toString())
+            .build();
       };
 
-  private final Function<DatamartCondition, List<String>> toConditionCsv =
+  private final Function<DatamartCondition, CsvModel> toConditionCsv =
       dmCondition -> {
-        var csvRow = new ArrayList<String>(11);
         // Use the patient map to find the patient's name and birthdate by ICN
         var icn = dmCondition.patient().reference().get();
         if (!ICN_TO_EMAIL.containsKey(icn)) {
           return null;
         }
-        csvRow.add(getOrThrow("email", ICN_TO_EMAIL, icn));
-        csvRow.add(icn);
         var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
-        csvRow.add(dmPatient.name());
-        csvRow.add(dmPatient.birthDateTime().substring(0, 10));
-        csvRow.add("Condition");
-
+        String codeSystem = "";
+        String code = "";
+        String description = "";
         if (dmCondition.hasSnomedCode()) {
           var snomed = dmCondition.snomed().get();
-          csvRow.add("SNOMED");
-          csvRow.add(snomed.code());
-          csvRow.add(snomed.display());
+          codeSystem = "SNOMED";
+          code = snomed.code();
+          description = snomed.display();
         } else if (dmCondition.hasIcdCode()) {
           var icd = dmCondition.icd().get();
-          csvRow.add("ICD");
-          csvRow.add(icd.code());
-          csvRow.add(icd.display());
-        } else {
-          csvRow.add("");
-          csvRow.add("");
-          csvRow.add("");
+          codeSystem = "ICD";
+          code = icd.code();
+          description = icd.display();
         }
-        csvRow.add(dmCondition.clinicalStatus().name());
-        csvRow.add(dmCondition.category().name());
-        csvRow.add(Objects.requireNonNull(dmCondition.onsetDateTime().orElse(null)).toString());
-        return csvRow;
+        return CsvModel.forPatient(dmPatient)
+            .resource("Condition")
+            .codeSystem(codeSystem)
+            .code(code)
+            .description(description)
+            .status(dmCondition.clinicalStatus().name())
+            .classification(dmCondition.category().name())
+            .date(Objects.requireNonNull(dmCondition.onsetDateTime().orElse(null)).toString())
+            .build();
       };
 
   static <T> T getOrThrow(String description, Map<String, T> map, String key) {
@@ -230,13 +220,13 @@ public class GenerateCsv {
             resource,
             importDirectory);
         for (var record : toCsvRecords(importDirectory, resource)) {
-          printer.printRecord(record);
+          printer.printRecord(record.csvRow());
         }
       }
     }
   }
 
-  List<List<String>> toCsvRecords(File dir, String resource) {
+  List<CsvModel> toCsvRecords(File dir, String resource) {
     switch (resource) {
       case "AllergyIntolerance":
         return toCsvRecords(dir, DatamartAllergyIntolerance.class, toAllergyIntoleranceCsv);
@@ -249,12 +239,61 @@ public class GenerateCsv {
     }
   }
 
-  <DM extends HasReplaceableId> List<List<String>> toCsvRecords(
-      File directory, Class<DM> resourceType, Function<DM, List<String>> toDatamartCsv) {
+  <DM extends HasReplaceableId> List<CsvModel> toCsvRecords(
+      File directory, Class<DM> resourceType, Function<DM, CsvModel> toDatamartCsv) {
     return MakerUtils.findUniqueFiles(directory, DatamartFilenamePatterns.get().json(resourceType))
         .parallelStream()
         .map(f -> toDatamartCsv.apply(MakerUtils.fileToDatamart(MAPPER, f, resourceType)))
         .filter(Objects::nonNull)
         .collect(toList());
+  }
+
+  @Value
+  @Builder
+  private static class CsvModel {
+    String patientEmail;
+
+    String patientIcn;
+
+    String name;
+
+    String birthdate;
+
+    String resource;
+
+    String codeSystem;
+
+    String code;
+
+    String description;
+
+    String status;
+
+    String classification;
+
+    String date;
+
+    static CsvModelBuilder forPatient(DatamartPatient dmPatient) {
+      return CsvModel.builder()
+          .patientEmail(getOrThrow("email", ICN_TO_EMAIL, dmPatient.fullIcn()))
+          .patientIcn(dmPatient.fullIcn())
+          .name(dmPatient.name())
+          .birthdate(dmPatient.birthDateTime().substring(0, 10));
+    }
+
+    public List<String> csvRow() {
+      return List.of(
+          patientEmail,
+          patientIcn,
+          name,
+          birthdate,
+          resource,
+          codeSystem,
+          code,
+          description,
+          status,
+          classification,
+          date);
+    }
   }
 }
