@@ -11,6 +11,7 @@ import gov.va.api.health.autoconfig.configuration.JacksonConfig;
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.DatamartAllergyIntolerance;
 import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppointment;
 import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
+import gov.va.api.health.dataquery.service.controller.diagnosticreport.DatamartDiagnosticReport;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
@@ -40,7 +41,7 @@ import org.junit.jupiter.api.Test;
 public class GenerateCsv {
   /** Resources to generate csv entries. To be filled out over time */
   private static final List<String> ALL_RESOURCES =
-      List.of("AllergyIntolerance", "Appointment", "Condition");
+      List.of("AllergyIntolerance", "Appointment", "Condition", "DiagnosticReport");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -100,7 +101,6 @@ public class GenerateCsv {
 
   private final Function<DatamartAppointment, CsvModel> toAppointmentCsv =
       dmAppointment -> {
-        // Use the patient map to find the patient's name and birthdate by ICN
         var icn =
             dmAppointment.participant().stream()
                 .filter(p -> "PATIENT".equalsIgnoreCase(p.type().orElse(null)))
@@ -124,7 +124,6 @@ public class GenerateCsv {
 
   private final Function<DatamartCondition, CsvModel> toConditionCsv =
       dmCondition -> {
-        // Use the patient map to find the patient's name and birthdate by ICN
         var icn = dmCondition.patient().reference().get();
         if (!ICN_TO_EMAIL.containsKey(icn)) {
           return null;
@@ -152,6 +151,24 @@ public class GenerateCsv {
             .status(dmCondition.clinicalStatus().name())
             .classification(dmCondition.category().name())
             .date(Objects.requireNonNull(dmCondition.onsetDateTime().orElse(null)).toString())
+            .build();
+      };
+
+  private final Function<DatamartDiagnosticReport, CsvModel> toDiagnosticReportCsv =
+      dmDiagnosticReport -> {
+        var icn = dmDiagnosticReport.patient().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        return CsvModel.forPatient(dmPatient)
+            .resource("DiagnosticReport")
+            .codeSystem("")
+            .code("")
+            .description("panel")
+            .status("final")
+            .classification("Laboratory")
+            .date(Objects.requireNonNull(dmDiagnosticReport.effectiveDateTime()))
             .build();
       };
 
@@ -234,6 +251,8 @@ public class GenerateCsv {
         return toCsvRecords(dir, DatamartAppointment.class, toAppointmentCsv);
       case "Condition":
         return toCsvRecords(dir, DatamartCondition.class, toConditionCsv);
+      case "DiagnosticReport":
+        return toCsvRecords(dir, DatamartDiagnosticReport.class, toDiagnosticReportCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
@@ -273,6 +292,7 @@ public class GenerateCsv {
 
     String date;
 
+    // Use the patient map to find the patient's name and birthdate by ICN
     static CsvModelBuilder forPatient(DatamartPatient dmPatient) {
       return CsvModel.builder()
           .patientEmail(getOrThrow("email", ICN_TO_EMAIL, dmPatient.fullIcn()))
