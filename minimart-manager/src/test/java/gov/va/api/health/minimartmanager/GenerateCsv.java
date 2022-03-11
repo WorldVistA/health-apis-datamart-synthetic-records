@@ -12,6 +12,7 @@ import gov.va.api.health.dataquery.service.controller.allergyintolerance.Datamar
 import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppointment;
 import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
 import gov.va.api.health.dataquery.service.controller.diagnosticreport.DatamartDiagnosticReport;
+import gov.va.api.health.dataquery.service.controller.encounter.DatamartEncounter;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
@@ -41,7 +42,7 @@ import org.junit.jupiter.api.Test;
 public class GenerateCsv {
   /** Resources to generate csv entries. To be filled out over time */
   private static final List<String> ALL_RESOURCES =
-      List.of("AllergyIntolerance", "Appointment", "Condition", "DiagnosticReport");
+      List.of("AllergyIntolerance", "Appointment", "Condition", "DiagnosticReport", "Encounter");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -172,6 +173,24 @@ public class GenerateCsv {
             .build();
       };
 
+  private final Function<DatamartEncounter, CsvModel> toEncounterCsv =
+      dmEncounter -> {
+        var icn = dmEncounter.patient().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        return CsvModel.forPatient(dmPatient)
+            .resource("Encounter")
+            .codeSystem("")
+            .code("")
+            .description("")
+            .status(dmEncounter.status().name())
+            .classification(dmEncounter.serviceType().name())
+            .date(Objects.requireNonNull(dmEncounter.period().get().start().get()).toString())
+            .build();
+      };
+
   static <T> T getOrThrow(String description, Map<String, T> map, String key) {
     var value = map.get(key);
     checkState(value != null, "Missing %s for %s", description, key);
@@ -253,6 +272,8 @@ public class GenerateCsv {
         return toCsvRecords(dir, DatamartCondition.class, toConditionCsv);
       case "DiagnosticReport":
         return toCsvRecords(dir, DatamartDiagnosticReport.class, toDiagnosticReportCsv);
+      case "Encounter":
+        return toCsvRecords(dir, DatamartEncounter.class, toEncounterCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
