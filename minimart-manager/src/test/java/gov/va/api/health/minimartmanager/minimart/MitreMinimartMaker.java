@@ -18,6 +18,8 @@ import gov.va.api.health.dataquery.service.controller.condition.ConditionEntity;
 import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
 import gov.va.api.health.dataquery.service.controller.device.DatamartDevice;
 import gov.va.api.health.dataquery.service.controller.device.DeviceEntity;
+import gov.va.api.health.dataquery.service.controller.devicerequest.DatamartDeviceRequest;
+import gov.va.api.health.dataquery.service.controller.devicerequest.DeviceRequestEntity;
 import gov.va.api.health.dataquery.service.controller.diagnosticreport.DatamartDiagnosticReport;
 import gov.va.api.health.dataquery.service.controller.diagnosticreport.DiagnosticReportEntity;
 import gov.va.api.health.dataquery.service.controller.encounter.DatamartEncounter;
@@ -93,6 +95,7 @@ public class MitreMinimartMaker {
           AppointmentEntity.class,
           ConditionEntity.class,
           DeviceEntity.class,
+          DeviceRequestEntity.class,
           DiagnosticReportEntity.class,
           EncounterEntity.class,
           ImmunizationEntity.class,
@@ -188,6 +191,19 @@ public class MitreMinimartMaker {
             .cdwIdNumber(compositeCdwId.cdwIdNumber())
             .cdwIdResourceCode(compositeCdwId.cdwIdResourceCode())
             .icn(dm.patient().reference().orElse(null))
+            .lastUpdated(Instant.now())
+            .payload(datamartToString(dm))
+            .build();
+      };
+
+  private final Function<DatamartDeviceRequest, DeviceRequestEntity> toDeviceRequestEntity =
+      dm -> {
+        CompositeCdwId compositeCdwId = CompositeCdwId.fromCdwId(dm.cdwId());
+        return DeviceRequestEntity.builder()
+            .cdwIdNumber(compositeCdwId.cdwIdNumber())
+            .cdwIdResourceCode(compositeCdwId.cdwIdResourceCode())
+            .icn(dm.patient().reference().orElse(null))
+            .date(dm.occurrenceDateTime().orElse(null))
             .lastUpdated(Instant.now())
             .payload(datamartToString(dm))
             .build();
@@ -627,6 +643,9 @@ public class MitreMinimartMaker {
         break;
       case "Device":
         loader.insertResourceByType(DatamartDevice.class, toDeviceEntity);
+        break;
+      case "DeviceRequest":
+        loader.insertResourceByType(DatamartDeviceRequest.class, toDeviceRequestEntity);
         break;
       case "DiagnosticReport":
         loader.insertResourceByType(DatamartDiagnosticReport.class, toDiagnosticReportEntity);

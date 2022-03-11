@@ -4,6 +4,7 @@ import gov.va.api.health.dataquery.service.controller.allergyintolerance.Datamar
 import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppointment;
 import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
 import gov.va.api.health.dataquery.service.controller.device.DatamartDevice;
+import gov.va.api.health.dataquery.service.controller.devicerequest.DatamartDeviceRequest;
 import gov.va.api.health.dataquery.service.controller.diagnosticreport.DatamartDiagnosticReport;
 import gov.va.api.health.dataquery.service.controller.encounter.DatamartEncounter;
 import gov.va.api.health.dataquery.service.controller.immunization.DatamartImmunization;
@@ -25,15 +26,13 @@ public class DatamartFilenamePatterns {
 
   private final Map<Class<?>, String> jsonFileRegex;
 
-  private final Map<Class<?>, String> ndjsonFileRegex;
-
   private DatamartFilenamePatterns() {
-    ndjsonFileRegex = new HashMap<>();
     jsonFileRegex = new HashMap<>();
     jsonFileRegex.put(DatamartAllergyIntolerance.class, "^dmAllInt.*json$");
     jsonFileRegex.put(DatamartAppointment.class, "^dmApp.*json$");
     jsonFileRegex.put(DatamartCondition.class, "^dmCon.*json$");
-    jsonFileRegex.put(DatamartDevice.class, "^dmDev.*json$");
+    jsonFileRegex.put(DatamartDevice.class, "^dmDev(?!Req).*json$");
+    jsonFileRegex.put(DatamartDeviceRequest.class, "^dmDevReq.*json$");
     jsonFileRegex.put(DatamartDiagnosticReport.class, "^dmDiaRep.*json$");
     jsonFileRegex.put(DatamartEncounter.class, "^dmEnc.*json$");
     jsonFileRegex.put(DatamartImmunization.class, "^dmImm.*json$");
@@ -64,9 +63,5 @@ public class DatamartFilenamePatterns {
 
   public String json(Class<?> datamartResource) {
     return getOrDie(jsonFileRegex, datamartResource);
-  }
-
-  public String ndjson(Class<?> datamartResource) {
-    return getOrDie(ndjsonFileRegex, datamartResource);
   }
 }
