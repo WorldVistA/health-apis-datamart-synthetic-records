@@ -14,9 +14,12 @@ import gov.va.api.health.dataquery.service.controller.condition.DatamartConditio
 import gov.va.api.health.dataquery.service.controller.diagnosticreport.DatamartDiagnosticReport;
 import gov.va.api.health.dataquery.service.controller.encounter.DatamartEncounter;
 import gov.va.api.health.dataquery.service.controller.immunization.DatamartImmunization;
+import gov.va.api.health.dataquery.service.controller.medicationorder.DatamartMedicationOrder;
+import gov.va.api.health.dataquery.service.controller.medicationstatement.DatamartMedicationStatement;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
+import gov.va.api.health.r4.api.resources.MedicationRequest;
 import gov.va.api.lighthouse.datamart.DatamartCoding;
 import gov.va.api.lighthouse.datamart.DatamartReference;
 import gov.va.api.lighthouse.datamart.HasReplaceableId;
@@ -49,7 +52,9 @@ public class GenerateCsv {
           "Condition",
           "DiagnosticReport",
           "Encounter",
-          "Immunization");
+          "Immunization",
+          "MedicationOrder",
+          "MedicationStatement");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -220,6 +225,47 @@ public class GenerateCsv {
             .build();
       };
 
+  private final Function<DatamartMedicationOrder, CsvModel>
+      toMedicationRequestViaMedicationOrderCsv =
+          dmMedicationOrder -> {
+            var icn = dmMedicationOrder.patient().reference().get();
+            if (!ICN_TO_EMAIL.containsKey(icn)) {
+              return null;
+            }
+            var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+            return CsvModel.forPatient(dmPatient)
+                .resource("MedicationRequest")
+                .codeSystem("")
+                .code(
+                    dmMedicationOrder.category() == DatamartMedicationOrder.Category.UNKNOWN
+                        ? ""
+                        : dmMedicationOrder.category().name())
+                .description(dmMedicationOrder.medication().display().orElse(""))
+                .status(dmMedicationOrder.status())
+                .classification(MedicationRequest.Intent.order.name())
+                .date(Objects.requireNonNull(dmMedicationOrder.dateWritten()).toString())
+                .build();
+          };
+
+  private final Function<DatamartMedicationStatement, CsvModel>
+      toMedicationRequestViaMedicationStatementCsv =
+          dmMedicationStatement -> {
+            var icn = dmMedicationStatement.patient().reference().get();
+            if (!ICN_TO_EMAIL.containsKey(icn)) {
+              return null;
+            }
+            var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+            return CsvModel.forPatient(dmPatient)
+                .resource("MedicationRequest")
+                .codeSystem("")
+                .code("")
+                .description(dmMedicationStatement.medication().display().orElse(""))
+                .status(dmMedicationStatement.status().name())
+                .classification(MedicationRequest.Intent.plan.name())
+                .date(Objects.requireNonNull(dmMedicationStatement.dateAsserted()).toString())
+                .build();
+          };
+
   static <T> T getOrThrow(String description, Map<String, T> map, String key) {
     var value = map.get(key);
     checkState(value != null, "Missing %s for %s", description, key);
@@ -305,6 +351,12 @@ public class GenerateCsv {
         return toCsvRecords(dir, DatamartEncounter.class, toEncounterCsv);
       case "Immunization":
         return toCsvRecords(dir, DatamartImmunization.class, toImmunizationCsv);
+      case "MedicationOrder":
+        return toCsvRecords(
+            dir, DatamartMedicationOrder.class, toMedicationRequestViaMedicationOrderCsv);
+      case "MedicationStatement":
+        return toCsvRecords(
+            dir, DatamartMedicationStatement.class, toMedicationRequestViaMedicationStatementCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
