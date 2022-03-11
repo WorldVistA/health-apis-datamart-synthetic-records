@@ -13,6 +13,7 @@ import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppoin
 import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
 import gov.va.api.health.dataquery.service.controller.diagnosticreport.DatamartDiagnosticReport;
 import gov.va.api.health.dataquery.service.controller.encounter.DatamartEncounter;
+import gov.va.api.health.dataquery.service.controller.immunization.DatamartImmunization;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
@@ -42,7 +43,13 @@ import org.junit.jupiter.api.Test;
 public class GenerateCsv {
   /** Resources to generate csv entries. To be filled out over time */
   private static final List<String> ALL_RESOURCES =
-      List.of("AllergyIntolerance", "Appointment", "Condition", "DiagnosticReport", "Encounter");
+      List.of(
+          "AllergyIntolerance",
+          "Appointment",
+          "Condition",
+          "DiagnosticReport",
+          "Encounter",
+          "Immunization");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -191,6 +198,28 @@ public class GenerateCsv {
             .build();
       };
 
+  private final Function<DatamartImmunization, CsvModel> toImmunizationCsv =
+      dmImmunization -> {
+        var icn = dmImmunization.patient().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        if (dmImmunization.vaccineCode().coding().size() < 2) {
+          return null;
+        }
+        var vaccineCoding = dmImmunization.vaccineCode().coding().get(1);
+        return CsvModel.forPatient(dmPatient)
+            .resource("Immunization")
+            .codeSystem(vaccineCoding.system().orElse(""))
+            .code(vaccineCoding.code().orElse(""))
+            .description(vaccineCoding.display().orElse(""))
+            .status(dmImmunization.status().name())
+            .classification(dmImmunization.note().orElse(""))
+            .date(Objects.requireNonNull(dmImmunization.date()).toString())
+            .build();
+      };
+
   static <T> T getOrThrow(String description, Map<String, T> map, String key) {
     var value = map.get(key);
     checkState(value != null, "Missing %s for %s", description, key);
@@ -274,6 +303,8 @@ public class GenerateCsv {
         return toCsvRecords(dir, DatamartDiagnosticReport.class, toDiagnosticReportCsv);
       case "Encounter":
         return toCsvRecords(dir, DatamartEncounter.class, toEncounterCsv);
+      case "Immunization":
+        return toCsvRecords(dir, DatamartImmunization.class, toImmunizationCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
