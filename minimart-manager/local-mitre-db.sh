@@ -64,7 +64,7 @@ BASE_DIR=$(dirname $(readlink -f $0))
 LOCAL_DB=$BASE_DIR/target/mitre
 
 case $1 in
-  export-data-query) exportLocalMitreDb "AllergyIntolerance,Appointment,Condition,Device,DiagnosticReport,Encounter,Immunization,LatestResourceEtlStatus,Location,Medication,MedicationOrder,MedicationStatement,Observation,Organization,PatientV2,Practitioner,PractitionerRole,PractitionerRoleSpecialtyMap,Procedure";;
+  export-data-query) exportLocalMitreDb "AllergyIntolerance,Appointment,Condition,Device,DeviceRequest,DiagnosticReport,Encounter,Immunization,LatestResourceEtlStatus,Location,Medication,MedicationOrder,MedicationStatement,Observation,Organization,PatientV2,Practitioner,PractitionerRole,PractitionerRoleSpecialtyMap,Procedure";;
   export-vista-fhir-query) exportLocalMitreDb "VitalVuidMapping";;
   open) openLocalMitreDb "${2:-}";;
   *) usage;;
