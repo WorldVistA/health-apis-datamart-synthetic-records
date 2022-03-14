@@ -1,6 +1,9 @@
 package gov.va.api.health.minimartmanager;
 
 import static com.google.common.base.Preconditions.checkState;
+import static gov.va.api.health.dataquery.service.controller.R4Transformers.asCoding;
+import static gov.va.api.health.dataquery.service.controller.R4Transformers.textOrElseDisplay;
+import static gov.va.api.health.dataquery.service.controller.Transformers.allBlank;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -16,6 +19,7 @@ import gov.va.api.health.dataquery.service.controller.encounter.DatamartEncounte
 import gov.va.api.health.dataquery.service.controller.immunization.DatamartImmunization;
 import gov.va.api.health.dataquery.service.controller.medicationorder.DatamartMedicationOrder;
 import gov.va.api.health.dataquery.service.controller.medicationstatement.DatamartMedicationStatement;
+import gov.va.api.health.dataquery.service.controller.observation.DatamartObservation;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
@@ -54,7 +58,8 @@ public class GenerateCsv {
           "Encounter",
           "Immunization",
           "MedicationOrder",
-          "MedicationStatement");
+          "MedicationStatement",
+          "Observation");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -266,6 +271,29 @@ public class GenerateCsv {
                 .build();
           };
 
+  private final Function<DatamartObservation, CsvModel> toObservationCsv =
+      dmObservation -> {
+        var icn = dmObservation.subject().get().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        var code = dmObservation.code().get();
+        var coding = asCoding(code.coding());
+        if (allBlank(coding, code.text())) {
+          return null;
+        }
+        return CsvModel.forPatient(dmPatient)
+            .resource("Observation")
+            .codeSystem(coding.system())
+            .code(coding.code())
+            .description(textOrElseDisplay(code.text(), coding))
+            .status(dmObservation.status().name())
+            .classification(dmObservation.category().name())
+            .date(Objects.requireNonNull(dmObservation.effectiveDateTime().orElse(null)).toString())
+            .build();
+      };
+
   static <T> T getOrThrow(String description, Map<String, T> map, String key) {
     var value = map.get(key);
     checkState(value != null, "Missing %s for %s", description, key);
@@ -357,6 +385,8 @@ public class GenerateCsv {
       case "MedicationStatement":
         return toCsvRecords(
             dir, DatamartMedicationStatement.class, toMedicationRequestViaMedicationStatementCsv);
+      case "Observation":
+        return toCsvRecords(dir, DatamartObservation.class, toObservationCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
