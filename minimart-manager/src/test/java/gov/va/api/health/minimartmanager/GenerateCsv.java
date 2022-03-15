@@ -21,6 +21,7 @@ import gov.va.api.health.dataquery.service.controller.medicationorder.DatamartMe
 import gov.va.api.health.dataquery.service.controller.medicationstatement.DatamartMedicationStatement;
 import gov.va.api.health.dataquery.service.controller.observation.DatamartObservation;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
+import gov.va.api.health.dataquery.service.controller.procedure.DatamartProcedure;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
 import gov.va.api.health.r4.api.resources.MedicationRequest;
@@ -59,7 +60,8 @@ public class GenerateCsv {
           "Immunization",
           "MedicationOrder",
           "MedicationStatement",
-          "Observation");
+          "Observation",
+          "Procedure");
 
   private static final String[] CSV_HEADERS = {
     "PatientEmail",
@@ -294,6 +296,24 @@ public class GenerateCsv {
             .build();
       };
 
+  private final Function<DatamartProcedure, CsvModel> toProcedureCsv =
+      dmProcedure -> {
+        var icn = dmProcedure.patient().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        return CsvModel.forPatient(dmPatient)
+            .resource("Procedure")
+            .codeSystem("")
+            .code("")
+            .description(dmProcedure.coding().display().orElse(""))
+            .status(dmProcedure.status().name())
+            .classification("")
+            .date(Objects.requireNonNull(dmProcedure.performedDateTime().orElse(null)).toString())
+            .build();
+      };
+
   static <T> T getOrThrow(String description, Map<String, T> map, String key) {
     var value = map.get(key);
     checkState(value != null, "Missing %s for %s", description, key);
@@ -387,6 +407,8 @@ public class GenerateCsv {
             dir, DatamartMedicationStatement.class, toMedicationRequestViaMedicationStatementCsv);
       case "Observation":
         return toCsvRecords(dir, DatamartObservation.class, toObservationCsv);
+      case "Procedure":
+        return toCsvRecords(dir, DatamartProcedure.class, toProcedureCsv);
       default:
         throw new RuntimeException("Unsupported resource type: " + resource);
     }
