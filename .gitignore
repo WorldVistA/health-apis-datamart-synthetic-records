@@ -11,6 +11,7 @@ transformFailures.txt
 */.private/
 
 minimart-manager/sqlserver.properties
+minimart-manager/health-test-patient-data.csv
 
 ### STS ###
 .apt_generated
