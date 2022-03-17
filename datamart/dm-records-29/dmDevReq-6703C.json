@@ -1,0 +1,1 @@
+{"objectType":"DeviceRequest","objectVersion":"1","cdwId":"-6703:C","patient":{"type":"Patient","reference":"29","display":"Mr. Elmer371 Kiehn525"},"occurrenceDateTime":"1988-07-24T11:37:00Z","status":"COMPLETE","requester":[{"type":"Practitioner","reference":"416704:S","display":"DR. JANE460 DOE922 MD"}],"codeCodeableConcept":{"text":"PROSTHETICS REQUEST - CPAP/BIPAP"}}
