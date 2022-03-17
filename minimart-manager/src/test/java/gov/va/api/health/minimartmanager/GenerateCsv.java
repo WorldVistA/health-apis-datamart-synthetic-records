@@ -182,9 +182,7 @@ public class GenerateCsv {
         if (!ICN_TO_EMAIL.containsKey(icn)) {
           return null;
         }
-        log.warn(icn);
         var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
-        log.warn(dmPatient.name());
         return CsvModel.forPatient(dmPatient)
             .resource("DeviceRequest")
             .codeSystem("")
