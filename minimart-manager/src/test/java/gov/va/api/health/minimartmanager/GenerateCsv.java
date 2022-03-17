@@ -14,6 +14,7 @@ import gov.va.api.health.autoconfig.configuration.JacksonConfig;
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.DatamartAllergyIntolerance;
 import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppointment;
 import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
+import gov.va.api.health.dataquery.service.controller.devicerequest.DatamartDeviceRequest;
 import gov.va.api.health.dataquery.service.controller.diagnosticreport.DatamartDiagnosticReport;
 import gov.va.api.health.dataquery.service.controller.encounter.DatamartEncounter;
 import gov.va.api.health.dataquery.service.controller.immunization.DatamartImmunization;
@@ -56,6 +57,7 @@ public class GenerateCsv {
           "Appointment",
           "Condition",
           "DiagnosticReport",
+          "DeviceRequest",
           "Encounter",
           "Immunization",
           "MedicationOrder",
@@ -171,6 +173,28 @@ public class GenerateCsv {
             .status(dmCondition.clinicalStatus().name())
             .classification(dmCondition.category().name())
             .date(Objects.requireNonNull(dmCondition.onsetDateTime().orElse(null)).toString())
+            .build();
+      };
+
+  private final Function<DatamartDeviceRequest, CsvModel> toDeviceRequestCsv =
+      dmDeviceRequest -> {
+        var icn = dmDeviceRequest.patient().reference().get();
+        if (!ICN_TO_EMAIL.containsKey(icn)) {
+          return null;
+        }
+        log.warn(icn);
+        var dmPatient = getOrThrow("patient", ICN_TO_PATIENT, icn);
+        log.warn(dmPatient.name());
+        return CsvModel.forPatient(dmPatient)
+            .resource("DeviceRequest")
+            .codeSystem("")
+            .code("")
+            .description(dmDeviceRequest.codeCodeableConcept().text())
+            .status(dmDeviceRequest.status().orElse(""))
+            .classification("")
+            .date(
+                Objects.requireNonNull(dmDeviceRequest.occurrenceDateTime().orElse(null))
+                    .toString())
             .build();
       };
 
@@ -393,6 +417,8 @@ public class GenerateCsv {
         return toCsvRecords(dir, DatamartAppointment.class, toAppointmentCsv);
       case "Condition":
         return toCsvRecords(dir, DatamartCondition.class, toConditionCsv);
+      case "DeviceRequest":
+        return toCsvRecords(dir, DatamartDeviceRequest.class, toDeviceRequestCsv);
       case "DiagnosticReport":
         return toCsvRecords(dir, DatamartDiagnosticReport.class, toDiagnosticReportCsv);
       case "Encounter":
