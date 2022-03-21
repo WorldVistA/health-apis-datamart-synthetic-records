@@ -25,6 +25,7 @@ import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.dataquery.service.controller.procedure.DatamartProcedure;
 import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
 import gov.va.api.health.minimartmanager.minimart.MakerUtils;
+import gov.va.api.health.r4.api.resources.DeviceRequest;
 import gov.va.api.health.r4.api.resources.MedicationRequest;
 import gov.va.api.lighthouse.datamart.DatamartCoding;
 import gov.va.api.lighthouse.datamart.DatamartReference;
@@ -189,7 +190,7 @@ public class GenerateCsv {
             .code("")
             .description(dmDeviceRequest.codeCodeableConcept().text())
             .status(dmDeviceRequest.status().orElse(""))
-            .classification("")
+            .classification(DeviceRequest.Intent.order.name())
             .date(
                 Objects.requireNonNull(dmDeviceRequest.occurrenceDateTime().orElse(null))
                     .toString())
