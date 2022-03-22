@@ -1,0 +1,1 @@
+{"objectType":"DeviceRequest","objectVersion":"1","cdwId":"-5937:C","status":"COMPLETE","codeCodeableConcept":{"text":"PROSTHETICS REQUEST - CPAP/BIPAP"},"patient":{"type":"Patient","reference":"41","display":"Mr. Art115 Lang846"},"occurrenceDateTime":"1994-02-05T17:53:00Z","requester":{"type":"Practitioner","reference":"743882:S","display":"DR. Alexander Martin PHD"}}
