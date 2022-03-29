@@ -118,9 +118,7 @@ public class MitreMinimartMaker {
   private final Function<DatamartAllergyIntolerance, AllergyIntoleranceEntity>
       toAllergyIntoleranceEntity =
           dm -> {
-            CompositeCdwId compositeCdwId =
-                CompositeCdwIds.optionalFromCdwId(dm.cdwId())
-                    .orElseGet(() -> CompositeCdwId.fromCdwId(dm.cdwId() + ":A"));
+            CompositeCdwId compositeCdwId = CompositeCdwId.fromCdwId(dm.cdwId());
             return AllergyIntoleranceEntity.builder()
                 .cdwId(dm.cdwId())
                 .cdwIdNumber(compositeCdwId.cdwIdNumber())
