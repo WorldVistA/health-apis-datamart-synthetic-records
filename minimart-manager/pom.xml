@@ -4,7 +4,7 @@
   <parent>
     <groupId>gov.va.api.health</groupId>
     <artifactId>test-starter</artifactId>
-    <version>9.0.6</version>
+    <version>9.0.8</version>
     <relativePath/>
   </parent>
   <artifactId>minimart-manager</artifactId>
