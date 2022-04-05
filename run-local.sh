@@ -22,7 +22,7 @@ exit 1
 main() {
   case "$1" in
     help|[-]*help) usage "I cant even with this...";;
-    clean|start) createDatabase; shift; break;;
+    clean|start) createDatabase; shift;;
   esac
   syntheticRecordsBuilder
   loadDatabase $@
@@ -38,11 +38,14 @@ createDatabase() {
   echo "stop and remove dqdb"
   docker stop "dqdb" || true && docker rm "dqdb" || true
 
-  # SQL Server Docker Image (You don't have to install anything!!!)
-  docker pull mcr.microsoft.com/mssql/server:2017-latest
+  #SQL_SERVER_IMAGE=mcr.microsoft.com/mssql/server:2017-latest
+  SQL_SERVER_IMAGE=mcr.microsoft.com/azure-sql-edge:latest
+  echo "using image $SQL_SERVER_IMAGE"
 
-  # Run the docker image, but make sure its configuration matches the local ones
-  # that were set.
+  # SQL Server Docker Image (you don't have to install anything)
+  docker pull $SQL_SERVER_IMAGE
+
+  # Run docker image with local configuration
   [ -f "environments/local.conf" ] && . environments/local.conf
   [ -z "$FLYWAY_PASSWORD" ] && "Help! I can't seem to find my password(FLYWAY_PASSWORD)!" && exit 1
   docker run \
@@ -50,7 +53,7 @@ createDatabase() {
     -e 'ACCEPT_EULA=Y' \
     -e "SA_PASSWORD=$FLYWAY_PASSWORD" \
     -p 1433:1433 \
-    -d mcr.microsoft.com/mssql/server:2017-latest
+    -d "$SQL_SERVER_IMAGE"
 
   # Needs time to create SA user
   sleep 10
