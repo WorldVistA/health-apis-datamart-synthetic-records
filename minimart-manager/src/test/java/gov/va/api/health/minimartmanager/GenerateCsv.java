@@ -189,7 +189,7 @@ public class GenerateCsv {
             .codeSystem("")
             .code("")
             .description(dmDeviceRequest.codeCodeableConcept().text())
-            .status(dmDeviceRequest.status().orElse(""))
+            .status(dmDeviceRequest.status().map(e -> e.name()).orElse(""))
             .classification(DeviceRequest.Intent.order.name())
             .date(
                 Objects.requireNonNull(dmDeviceRequest.occurrenceDateTime().orElse(null))
