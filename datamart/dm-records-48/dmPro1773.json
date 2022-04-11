@@ -1,1 +1,0 @@
-{"objectType":"Procedure","objectVersion":"1","cdwId":"1773","patient":{"type":"Patient","reference":"48","display":"Mr. Damian46 McKenzie376"},"status":"completed","coding":{"system":"http://www.ama-assn.org/go/cpt","code":"XXXXX","display":"Colonoscopy"},"notPerformed":false,"performedDateTime":"2018-04-28T14:22:12Z"}
