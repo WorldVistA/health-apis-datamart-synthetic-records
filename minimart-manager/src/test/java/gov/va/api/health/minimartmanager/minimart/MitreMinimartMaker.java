@@ -455,9 +455,7 @@ public class MitreMinimartMaker {
 
   private final Function<DatamartProcedure, ProcedureEntity> toProcedure =
       dm -> {
-        CompositeCdwId compositeCdwId =
-            CompositeCdwIds.optionalFromCdwId(dm.cdwId())
-                .orElseGet(() -> CompositeCdwId.fromCdwId(dm.cdwId() + ":S"));
+        CompositeCdwId compositeCdwId = CompositeCdwId.fromCdwId(dm.cdwId());
         Instant lastUpdated =
             dm.performedDateTime().isPresent()
                 ? dm.performedDateTime().get().plus(30, ChronoUnit.DAYS)
