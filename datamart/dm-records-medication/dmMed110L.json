@@ -1,0 +1,10 @@
+{
+  "objectType": "Medication",
+  "objectVersion": "1",
+  "cdwId": "110:L",
+  "rxnorm": {
+    "code": "372550",
+    "display": "KETOTIFEN",
+    "text": "KETOTIFEN 0.025% SOLN,OPH"
+  }
+}

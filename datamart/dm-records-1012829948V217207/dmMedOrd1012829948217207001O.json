@@ -1,0 +1,29 @@
+{
+  "objectType": "MedicationOrder",
+  "objectVersion": "1",
+  "cdwId": "1012829948217207001:O",
+  "patient": {
+    "type": "Patient",
+    "reference": "1012829948V217207",
+    "display": "Allan Butler"
+  },
+  "dateWritten": "2021-08-08T00:00:00Z",
+  "status": "HOLD",
+  "medication": {
+    "type": "Medication",
+    "reference": "101:L",
+    "display": "ALBUTEROL SO4 3MG/IPRATROPIUM BR 0.5MG/3ML INHL,3ML"
+  },
+  "dosageInstruction": [
+    {
+      "dosageText": "INHALE 1 NEB VIA NEBULIZER FOUR TIMES A DAY",
+      "timingText": "As directed by physician.",
+      "routeText": "INHALATION"
+    }
+  ],
+  "dispenseRequest": {
+    "numberOfRepeatsAllowed": 1,
+    "expectedSupplyDuration": 30,
+    "supplyDurationUnits": "days"
+  }
+}

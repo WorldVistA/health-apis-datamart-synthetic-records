@@ -1,0 +1,23 @@
+{
+  "objectType": "MedicationOrder",
+  "objectVersion": "1",
+  "cdwId": "1012829948217207004:O",
+  "patient": {
+    "type": "Patient",
+    "reference": "1012829948V217207",
+    "display": "Allan Butler"
+  },
+  "dateWritten": "2022-03-06T00:00:00Z",
+  "status": "ACTIVE",
+  "medication": {
+    "type": "Medication",
+    "reference": "110:L",
+    "display": "KETOTIFEN 0.025% SOLN,OPH"
+  },
+  "dosageInstruction": [
+    {
+      "dosageText": "INSTILL 1 DROP IN BOTH EYES 2 TIMES A DAY AS NEEDED FOR ALLERGY EYE SYMPTOMS",
+      "timingText": "As directed by physician."
+    }
+  ]
+}

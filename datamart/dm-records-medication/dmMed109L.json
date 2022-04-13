@@ -1,0 +1,10 @@
+{
+  "objectType": "Medication",
+  "objectVersion": "1",
+  "cdwId": "109:L",
+  "rxnorm": {
+    "code": "377668",
+    "display": "DESONIDE",
+    "text": "DESONIDE 0.05% CREAM,TOP"
+  }
+}
