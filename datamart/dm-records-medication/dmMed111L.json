@@ -1,10 +1,1 @@
-{
-  "objectType": "Medication",
-  "objectVersion": "1",
-  "cdwId": "111:L",
-  "rxnorm": {
-    "code": "374551",
-    "display": "SODIUM CHLORIDE",
-    "text": "SODIUM CHLORIDE 0.65% SOLN,NASAL SPRAY"
-  }
-}
+{"objectType":"Medication","objectVersion":"1","cdwId":"111:L","rxnorm":{"code":"374551","display":"SODIUM CHLORIDE","text":"SODIUM CHLORIDE 0.65% SOLN,NASAL SPRAY"}}
