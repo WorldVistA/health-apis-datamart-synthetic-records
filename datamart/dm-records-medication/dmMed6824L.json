@@ -1,9 +1,1 @@
-{
-  "objectType": "Medication",
-  "objectVersion": "1",
-  "cdwId": "6824:L",
-  "rxnorm": {
-    "code": "359494",
-    "text": "Eletriptan HBr 40 MG Oral Tablet"
-  }
-}
+{"objectType":"Medication","objectVersion":"1","cdwId":"6824:L","rxnorm":{"code":"359494","text":"Eletriptan HBr 40 MG Oral Tablet"}}
