@@ -1,5 +1,7 @@
 package gov.va.api.health.minimartmanager.minimart;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.DatamartAllergyIntolerance;
 import gov.va.api.health.dataquery.service.controller.appointment.DatamartAppointment;
 import gov.va.api.health.dataquery.service.controller.condition.DatamartCondition;
@@ -18,16 +20,16 @@ import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.dataquery.service.controller.practitioner.DatamartPractitioner;
 import gov.va.api.health.dataquery.service.controller.practitionerrole.DatamartPractitionerRole;
 import gov.va.api.health.dataquery.service.controller.procedure.DatamartProcedure;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Map;
 
 public class DatamartFilenamePatterns {
   private static final DatamartFilenamePatterns INSTANCE = new DatamartFilenamePatterns();
 
-  private final Map<Class<?>, String> jsonFileRegex;
+  private final BiMap<Class<?>, String> jsonFileRegex;
 
   private DatamartFilenamePatterns() {
-    jsonFileRegex = new HashMap<>();
+    jsonFileRegex = HashBiMap.create();
     jsonFileRegex.put(DatamartAllergyIntolerance.class, "^dmAllInt.*json$");
     jsonFileRegex.put(DatamartAppointment.class, "^dmApp.*json$");
     jsonFileRegex.put(DatamartCondition.class, "^dmCon.*json$");
@@ -52,16 +54,27 @@ public class DatamartFilenamePatterns {
     return INSTANCE;
   }
 
-  private String getOrDie(Map<Class<?>, String> registry, Class<?> datamartResource) {
-    var pattern = registry.get(datamartResource);
-    if (pattern == null) {
-      throw new IllegalArgumentException(
-          "File pattern not found for: " + datamartResource.getName());
+  public Class<?> datamartResource(String json) {
+    return getOrDie(
+        jsonFileRegex.inverse(), json, String.format("Datamart resource not found for: {}", json));
+  }
+
+  private <K, V> V getOrDie(Map<K, V> map, K key, String message) {
+    var value = map.get(key);
+    if (value == null) {
+      throw new IllegalArgumentException(message);
     }
-    return pattern;
+    return value;
   }
 
   public String json(Class<?> datamartResource) {
-    return getOrDie(jsonFileRegex, datamartResource);
+    return getOrDie(
+        jsonFileRegex,
+        datamartResource,
+        String.format("File pattern not found for: {}", datamartResource.getName()));
+  }
+
+  public Collection<String> jsons() {
+    return jsonFileRegex.values();
   }
 }
