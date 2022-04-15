@@ -4,7 +4,7 @@
   <parent>
     <groupId>gov.va.api.health</groupId>
     <artifactId>test-starter</artifactId>
-    <version>9.0.8</version>
+    <version>10.0.0</version>
     <relativePath/>
   </parent>
   <artifactId>minimart-manager</artifactId>
@@ -12,11 +12,11 @@
   <packaging>jar</packaging>
   <properties>
     <apache-csv.version>1.8</apache-csv.version>
-    <data-query.version>4.0.84</data-query.version>
-    <datamart-starter.version>4.0.0</datamart-starter.version>
+    <data-query.version>5.0.0</data-query.version>
+    <datamart-starter.version>5.0.0</datamart-starter.version>
     <git.allowedBranchNames><![CDATA[^(dependabot/.*|qa|staging_lab|lab|PR-[0-9]+|(.*/)?[A-Z]{2,10}-[0-9]+-.*)$]]></git.allowedBranchNames>
     <javafaker.version>1.0.2</javafaker.version>
-    <vista-fhir-query.version>2.0.0</vista-fhir-query.version>
+    <vista-fhir-query.version>2.0.171</vista-fhir-query.version>
   </properties>
   <dependencies>
     <dependency>
