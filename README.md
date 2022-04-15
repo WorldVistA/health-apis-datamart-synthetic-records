@@ -1,21 +1,18 @@
 # health-apis-datamart-synthetic-records
 
-This repository acts as storage for synthetic data via JSON documents.
-It also provides tools for building reproducible (MITRE) databases filled with synthetic data.
+Synthetic data for [health-apis-data-query](https://github.com/department-of-veterans-affairs/health-apis-data-query)
+for use in local development and test environments.
 
-### Creating a Local Synthetic Records Database
+See also
+[Sandbox Test Accounts for Health APIs](https://github.com/department-of-veterans-affairs/vets-api-clients/blob/master/test_accounts/health_test_accounts.md)
 
-##### Prerequisites
+### Local Development
 
-1. Docker
-2. [Flyway](https://flywaydb.org/download/)
+1. Docker is required
+2. Download [Flyway](https://flywaydb.org/download/) and unzip it in the root of this repository
+3. Use `./run-local.sh clean` to create a new database (as a docker image) and populate it
 
-##### Launching the Database
-
-1. Download Flyway and unzip it in the root of this repository
-2. Use `./run-local.sh clean` to create a new database (as a docker image) and populate it
-
-To populate an existing database, retaining existing schema and records, use `./run-local.sh`
+To repopulate an existing database, retaining existing schema and records, use `./run-local.sh`
 with no arguments.
 
 You can control the resources updated for the local development using `RESOURCES` environment
