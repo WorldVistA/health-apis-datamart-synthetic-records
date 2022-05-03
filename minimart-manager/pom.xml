@@ -4,7 +4,7 @@
   <parent>
     <groupId>gov.va.api.health</groupId>
     <artifactId>test-starter</artifactId>
-    <version>10.0.0</version>
+    <version>10.0.3</version>
     <relativePath/>
   </parent>
   <artifactId>minimart-manager</artifactId>
@@ -98,9 +98,6 @@
   </build>
   <profiles>
     <profile>
-      <!--
-        This profile exists to support the running of the DatamartExporter only. See data-query-tests/export-mitre.sh
-      -->
       <id>mitre-export</id>
       <build>
         <plugins>
@@ -121,54 +118,6 @@
                   <arguments>
                     <argument>${configFile}</argument>
                     <argument>${outputFile}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <!--
-      This profile exists to support the running of the mitre-minimart-maker only. See data-query-tests/mitre-minimart-maker.sh
-    -->
-    <profile>
-      <id>mitre-minimart-maker</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>minimart</id>
-                <goals>
-                  <goal>java</goal>
-                </goals>
-                <phase>generate-resources</phase>
-                <configuration>
-                  <mainClass>gov.va.api.health.minimartmanager.FhirToDatamart</mainClass>
-                  <classpathScope>test</classpathScope>
-                  <arguments>
-                    <argument>${resourceType}</argument>
-                    <argument>${inputDirectory}</argument>
-                    <argument>${idsConfig}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-              <execution>
-                <id>pushToDatabase</id>
-                <goals>
-                  <goal>java</goal>
-                </goals>
-                <phase>generate-resources</phase>
-                <configuration>
-                  <mainClass>gov.va.api.health.minimartmanager.MitreMinimartMaker</mainClass>
-                  <classpathScope>test</classpathScope>
-                  <arguments>
-                    <argument>${resourceType}</argument>
-                    <argument>${inputDirectory}</argument>
-                    <argument>${configFile}</argument>
                   </arguments>
                 </configuration>
               </execution>
