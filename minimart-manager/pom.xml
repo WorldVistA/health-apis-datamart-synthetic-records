@@ -98,7 +98,7 @@
   </build>
   <profiles>
     <profile>
-      <id>mitre-export</id>
+      <id>export-h2</id>
       <build>
         <plugins>
           <plugin>
@@ -112,7 +112,7 @@
                 </goals>
                 <phase>test-compile</phase>
                 <configuration>
-                  <mainClass>gov.va.api.health.minimartmanager.DatamartExporter</mainClass>
+                  <mainClass>gov.va.api.health.minimartmanager.H2Exporter</mainClass>
                   <classpathScope>test</classpathScope>
                   <cleanupDaemonThreads>false</cleanupDaemonThreads>
                   <arguments>

@@ -112,18 +112,12 @@ runDataQueryTests() {
   return 0
 }
 
-#
-# Bootstrap the database
-#
 announce "Bootstrapping database"
 $FLYWAY migrate \
   -url="${FLYWAY_BASE_URL};databaseName=$BOOTSTRAP_DB" \
   -table=flyway_schema_history \
   -locations='filesystem:db/bootstrap'
 
-#
-# Now apply migrations
-#
 announce "Migrating Database"
 $FLYWAY migrate \
   -url="${FLYWAY_BASE_URL};databaseName=$FLYWAY_PLACEHOLDERS_DB_NAME" \
@@ -133,14 +127,8 @@ $FLYWAY migrate \
 
 DATAMART_DIR=$BASE_DIR/datamart
 
-#
-# Populate Database
-#
 cd minimart-manager
 
-#
-# Build the sqlserver.properties file for MMM
-#
 CONFIG_FILE=sqlserver.properties
 cat <<EOF > $CONFIG_FILE
 spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
@@ -150,9 +138,6 @@ spring.datasource.password=$FLYWAY_PASSWORD
 EOF
 cat $CONFIG_FILE
 
-#
-# Run test PopulateDb "test", which will launch the MMM
-#
 announce "Populating Database Tables"
 
 MVN_ARGS=

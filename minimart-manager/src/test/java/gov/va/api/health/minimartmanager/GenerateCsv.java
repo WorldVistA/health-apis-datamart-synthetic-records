@@ -373,10 +373,10 @@ public class GenerateCsv {
 
   static Map<String, DatamartPatient> loadPatients() {
     var map = new HashMap<String, DatamartPatient>();
-    MakerUtils.findUniqueFiles(
+    DatamartFilenamePatterns.findUniqueFiles(
             importDirectory(), DatamartFilenamePatterns.get().json(DatamartPatient.class))
         .stream()
-        .map(f -> MakerUtils.fileToDatamart(MAPPER, f, DatamartPatient.class))
+        .map(f -> DatamartFilenamePatterns.fileToDatamart(MAPPER, f, DatamartPatient.class))
         .forEach(dmPatient -> map.put(dmPatient.fullIcn(), dmPatient));
     return Collections.unmodifiableMap(map);
   }
@@ -439,9 +439,13 @@ public class GenerateCsv {
 
   <DM extends HasReplaceableId> List<CsvModel> toCsvRecords(
       File directory, Class<DM> resourceType, Function<DM, CsvModel> toDatamartCsv) {
-    return MakerUtils.findUniqueFiles(directory, DatamartFilenamePatterns.get().json(resourceType))
+    return DatamartFilenamePatterns.findUniqueFiles(
+            directory, DatamartFilenamePatterns.get().json(resourceType))
         .parallelStream()
-        .map(f -> toDatamartCsv.apply(MakerUtils.fileToDatamart(MAPPER, f, resourceType)))
+        .map(
+            f ->
+                toDatamartCsv.apply(
+                    DatamartFilenamePatterns.fileToDatamart(MAPPER, f, resourceType)))
         .filter(Objects::nonNull)
         .collect(toList());
   }

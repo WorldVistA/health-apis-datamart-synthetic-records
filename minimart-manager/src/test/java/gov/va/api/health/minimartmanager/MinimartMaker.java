@@ -83,7 +83,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
-public class MitreMinimartMaker {
+public class MinimartMaker {
   private static final ObjectMapper MAPPER = JacksonConfig.createMapper();
 
   private static final List<Class<?>> MANAGED_CLASSES =
@@ -492,10 +492,10 @@ public class MitreMinimartMaker {
 
   private AtomicInteger addedCount = new AtomicInteger(0);
 
-  private MitreMinimartMaker(String resourceToSync, String configFile) {
+  private MinimartMaker(String resourceToSync, String configFile) {
     this.resourceToSync = resourceToSync;
     if (configFile == null || configFile.isBlank()) {
-      log.info("No config file was specified... Defaulting to local h2 database...");
+      log.info("No config file was specified; defaulting to local H2 database");
       entityManagerFactory = new LocalH2("./target/minimart", MANAGED_CLASSES).get();
     } else {
       entityManagerFactory = new ExternalDb(configFile, MANAGED_CLASSES).get();
@@ -505,7 +505,7 @@ public class MitreMinimartMaker {
 
   public static void removeOldEntities(
       String configFile, Collection<Consumer<EntityManager>> entitiesForRemoval) {
-    MitreMinimartMaker mmm = new MitreMinimartMaker(null, configFile);
+    MinimartMaker mmm = new MinimartMaker(null, configFile);
     log.info("Removing old entities...");
     entitiesForRemoval.forEach(r -> r.accept(mmm.getEntityManager()));
     log.info("Removed.");
@@ -513,7 +513,7 @@ public class MitreMinimartMaker {
   }
 
   public static void sync(String directory, String resourceToSync, String configFile) {
-    MitreMinimartMaker mmm = new MitreMinimartMaker(resourceToSync, configFile);
+    MinimartMaker mmm = new MinimartMaker(resourceToSync, configFile);
     log.info("Syncing {} files in {} to db", mmm.resourceToSync, directory);
     mmm.pushToDatabaseByResourceType(directory);
     log.info("{} sync complete", mmm.resourceToSync);
@@ -558,7 +558,7 @@ public class MitreMinimartMaker {
   }
 
   private Stream<File> findUniqueFiles(File dmDirectory, String filePattern) {
-    var uniqueFiles = MakerUtils.findUniqueFiles(dmDirectory, filePattern);
+    var uniqueFiles = DatamartFilenamePatterns.findUniqueFiles(dmDirectory, filePattern);
     totalRecords = uniqueFiles.size();
     return uniqueFiles.stream();
   }
@@ -766,7 +766,7 @@ public class MitreMinimartMaker {
           .parallel()
           .forEach(
               f -> {
-                DM dm = MakerUtils.fileToDatamart(MAPPER, f, resourceType);
+                DM dm = DatamartFilenamePatterns.fileToDatamart(MAPPER, f, resourceType);
                 E entity = toDatamartEntity.apply(dm);
                 save(entity);
                 post.accept(entity);

@@ -1,5 +1,8 @@
 package gov.va.api.health.minimartmanager;
 
+import static java.util.stream.Collectors.toList;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.DatamartAllergyIntolerance;
@@ -20,9 +23,21 @@ import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.dataquery.service.controller.practitioner.DatamartPractitioner;
 import gov.va.api.health.dataquery.service.controller.practitionerrole.DatamartPractitionerRole;
 import gov.va.api.health.dataquery.service.controller.procedure.DatamartProcedure;
+import gov.va.api.lighthouse.datamart.HasReplaceableId;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class DatamartFilenamePatterns {
   private static final DatamartFilenamePatterns INSTANCE = new DatamartFilenamePatterns();
 
@@ -48,6 +63,32 @@ public class DatamartFilenamePatterns {
     jsonFileRegex.put(DatamartPractitioner.class, "^dmPra[^R].*json$");
     jsonFileRegex.put(DatamartPractitionerRole.class, "^dmPraRol.*json$");
     jsonFileRegex.put(DatamartProcedure.class, "^dmPro.*json$");
+  }
+
+  @SneakyThrows
+  public static <R extends HasReplaceableId> R fileToDatamart(
+      ObjectMapper mapper, File f, Class<R> objectType) {
+    return mapper.readValue(f, objectType);
+  }
+
+  @SneakyThrows
+  public static List<File> findUniqueFiles(File dmDirectory, String filePattern) {
+    List<File> files =
+        Files.walk(dmDirectory.toPath())
+            .map(Path::toFile)
+            .filter(File::isFile)
+            .filter(f -> f.getName().matches(filePattern))
+            .collect(toList());
+    Set<String> fileNames = new HashSet<>();
+    List<File> uniqueFiles = new ArrayList<>();
+    for (File file : files) {
+      if (fileNames.add(file.getName())) {
+        uniqueFiles.add(file);
+      }
+    }
+    log.info("{} unique files found for {}", uniqueFiles.size(), filePattern);
+    Collections.sort(uniqueFiles);
+    return uniqueFiles;
   }
 
   public static DatamartFilenamePatterns get() {

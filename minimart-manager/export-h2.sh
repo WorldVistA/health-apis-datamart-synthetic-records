@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 
 #
-# This will export data from Mitre and replace the contents of the local
-# ./src/test/resources/mitre database. It expects config/lab.properties to contain
-# standard spring database configuration the source Mitre database.
+# Export a minimart instance to an H2 database at target/mitre.mv.db
+# config/lab.properties is required with connection properties for the source database
 #
-exportLocalMitreDb() {
+exportH2() {
   local includedTypes="$1"
   cd $(dirname $0)
 
@@ -22,7 +21,7 @@ exportLocalMitreDb() {
 
   mvn \
     -P'!standard' \
-    -Pmitre-export \
+    -Pexport-h2 \
     test-compile \
     -DconfigFile=config/lab.properties \
     -DoutputFile=$LOCAL_DB \
@@ -37,22 +36,20 @@ $LOCAL_DB.mv.db
 EOF
 }
 
-openLocalMitreDb() {
+openH2() {
   local db="${1:-}"
   [ -z "${db:-}" ] && db=${LOCAL_DB}
   java -jar ~/.m2/repository/com/h2database/h2/1.4.200/h2-1.4.200.jar -url jdbc:h2:${db} -user sa -password sa
 }
-
-# ============================================================
 
 usage() {
   cat <<EOF
 $0 <command>
 
 Commands:
-  export-data-query        Make a copy of db in a local h2 database
-  export-vista-fhir-query  Make a copy of db in a local h2 database
-  open                     Open the local mitre database
+  export-data-query        Export data-query minimart resources to a local H2 database
+  export-vista-fhir-query  Export vista-fhir-query minimart resources to a local H2 database
+  open                     Open the local H2 database
 
 Local database: $LOCAL_DB
 
@@ -64,8 +61,8 @@ BASE_DIR=$(dirname $(readlink -f $0))
 LOCAL_DB=$BASE_DIR/target/mitre
 
 case $1 in
-  export-data-query) exportLocalMitreDb "AllergyIntolerance,Appointment,Condition,Device,DeviceRequest,DiagnosticReport,Encounter,Immunization,LatestResourceEtlStatus,Location,Medication,MedicationOrder,MedicationStatement,Observation,Organization,PatientV2,Practitioner,PractitionerRole,PractitionerRoleSpecialtyMap,Procedure";;
-  export-vista-fhir-query) exportLocalMitreDb "VitalVuidMapping";;
-  open) openLocalMitreDb "${2:-}";;
+  export-data-query) exportH2 "AllergyIntolerance,Appointment,Condition,Device,DeviceRequest,DiagnosticReport,Encounter,Immunization,LatestResourceEtlStatus,Location,Medication,MedicationOrder,MedicationStatement,Observation,Organization,PatientV2,Practitioner,PractitionerRole,PractitionerRoleSpecialtyMap,Procedure";;
+  export-vista-fhir-query) exportH2 "VitalVuidMapping";;
+  open) openH2 "${2:-}";;
   *) usage;;
 esac

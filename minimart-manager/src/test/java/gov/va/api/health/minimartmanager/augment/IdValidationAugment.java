@@ -16,7 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import lombok.SneakyThrows;
 
-public class Minifier {
+public class IdValidationAugment {
   static final ObjectMapper MAPPER = JacksonConfig.createMapper();
 
   @SneakyThrows
@@ -41,17 +41,17 @@ public class Minifier {
   }
 
   @SneakyThrows
-  private static void checkIdAndMinify(Path root, String pattern) {
+  private static void checkIdAndRewrite(Path root, String pattern) {
     var datamartResource = DatamartFilenamePatterns.get().datamartResource(pattern);
     Files.walk(root)
         .parallel()
         .map(Path::toFile)
         .filter(file -> file.isFile() && file.getName().matches(pattern))
-        .forEach(file -> checkIdAndMinify(file, datamartResource));
+        .forEach(file -> checkIdAndRewrite(file, datamartResource));
   }
 
   @SneakyThrows
-  private static void checkIdAndMinify(File file, Class<?> datamartResource) {
+  private static void checkIdAndRewrite(File file, Class<?> datamartResource) {
     var payload = MAPPER.readValue(file, datamartResource);
     var payloadId =
         file.getName().startsWith("dmPat")
@@ -67,7 +67,7 @@ public class Minifier {
       Path root = Path.of("../datamart", path);
       checkState(root.toFile().isDirectory(), "%s is invalid", root.toFile());
       DatamartFilenamePatterns.get().jsons().parallelStream()
-          .forEach(pattern -> checkIdAndMinify(root, pattern));
+          .forEach(pattern -> checkIdAndRewrite(root, pattern));
     }
     checkDuplicates();
   }

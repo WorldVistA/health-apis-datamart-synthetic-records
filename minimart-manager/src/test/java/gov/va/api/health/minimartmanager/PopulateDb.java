@@ -67,7 +67,7 @@ public class PopulateDb {
       log.warn("Only synchronizing {}", resourcesToUpdate);
     }
 
-    MitreMinimartMaker.removeOldEntities(
+    MinimartMaker.removeOldEntities(
         configFilePath,
         List.of(
             MinimartRowRemover.removeBloodPressure552844LoincCode(),
@@ -79,7 +79,7 @@ public class PopulateDb {
           resource,
           importDirectoryPath,
           configFilePath);
-      MitreMinimartMaker.sync(importDirectoryPath, resource, configFilePath);
+      MinimartMaker.sync(importDirectoryPath, resource, configFilePath);
     }
     log.info("DONE");
   }

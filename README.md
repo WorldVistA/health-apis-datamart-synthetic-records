@@ -29,15 +29,3 @@ $ RESOURCES=Condition,Location run-local.sh
 ...
 
 ```
-
-### How to Minifier
-Augment class to minify datamart subdirectories (squish up the json), by reading in files and writing them back out.
-* For given subdirectories, Minifier also verifies that filenames match internally defined IDs
-* Minifier verifies globally that there are not duplicate filenames
-Example
-```
-mvn clean install && \
-mvn exec:java -Dexec.mainClass="gov.va.api.health.minimartmanager.augment.Minifier" \
--Dexec.args="dm-records-1012659372V317896 dm-records-1012667179V787205" \
--Dexec.classpathScope="test" -Dexec.cleanupDaemonThreads=false
-```

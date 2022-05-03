@@ -24,7 +24,7 @@ public class ExternalDb implements Supplier<EntityManagerFactory> {
 
   @SneakyThrows
   public ExternalDb(String configFile, List<Class<?>> managedClasses) {
-    log.info("Loading Mitre connection configuration from {}", configFile);
+    log.info("Loading external connection configuration from {}", configFile);
     config = new Properties(System.getProperties());
     try (FileInputStream inputStream = new FileInputStream(configFile)) {
       config.load(inputStream);
@@ -36,7 +36,7 @@ public class ExternalDb implements Supplier<EntityManagerFactory> {
   public EntityManagerFactory get() {
     PersistenceUnitInfo info =
         PersistenceUnit.builder()
-            .persistenceUnitName("mitre")
+            .persistenceUnitName("minimart")
             .jtaDataSource(sqlServerDataSource())
             .managedClasses(managedClasses)
             .properties(sqlServerProperties())
@@ -59,7 +59,8 @@ public class ExternalDb implements Supplier<EntityManagerFactory> {
   Properties sqlServerProperties() {
     Properties properties = new Properties();
     properties.put("hibernate.hbm2ddl.auto", "none");
-    properties.put("hibernate.show_sql", "false"); // <---- CHANGE TO TRUE TO DEBUG
+    // true to debug
+    properties.put("hibernate.show_sql", "false");
     properties.put("hibernate.format_sql", "true");
     properties.put("hibernate.globally_quoted_identifiers", "true");
     return properties;

@@ -36,16 +36,12 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This application will copy data out of the Mitre database into a local H2 database. It expects
- * that you will have ./config/lab.properties with Mitre database credentials using standard Spring
- * properties.
+ * Export a minimart instance to an H2 database at target/mitre.mv.db
  *
- * <p>This test will re-write src/test/resources/mitre, the local H2 mitre database used by
- * integration tests.
+ * <p>config/lab.properties is required with connection properties for the source database
  */
 @Slf4j
-public class DatamartExporter {
-  /** Add classes to this list to copy them from Mitre to H2 */
+public class H2Exporter {
   private static final List<ExportCriteria> EXPORT_CRITERIA =
       Arrays.asList(
           ExportForPatientCriteria.of(AllergyIntoleranceEntity.class),
@@ -70,24 +66,22 @@ public class DatamartExporter {
           ExportForPatientCriteria.of(ProcedureEntity.class),
           ExportAllCriteria.of(VitalVuidMappingEntity.class));
 
+  EntityManager minimart;
+
   EntityManager h2;
 
-  EntityManager mitre;
-
-  /** Simple class names with or without 'Entity' suffix for types that will be processed. */
   Set<String> includedTypeNames;
 
   @Builder
-  public DatamartExporter(
-      String configFile, String outputFile, @NonNull Set<String> includedTypeNames) {
-    mitre = new ExternalDb(configFile, managedClasses()).get().createEntityManager();
+  public H2Exporter(String configFile, String outputFile, @NonNull Set<String> includedTypeNames) {
+    minimart = new ExternalDb(configFile, managedClasses()).get().createEntityManager();
     h2 = new LocalH2(outputFile, managedClasses()).get().createEntityManager();
     this.includedTypeNames = includedTypeNames;
   }
 
   public static void main(String[] args) {
     if (args.length != 2) {
-      log.error("DatamartExporter <application.properties> <h2-database>");
+      log.error("H2Exporter <application.properties> <h2-database>");
       throw new RuntimeException("Missing arguments");
     }
     String configFile = args[0];
@@ -95,8 +89,7 @@ public class DatamartExporter {
     var includedTypeNames =
         Set.of(System.getProperty("exporter.included-types", "*").split("\\s*,\\s*"));
     log.info("Included types: {}", includedTypeNames);
-
-    DatamartExporter.builder()
+    H2Exporter.builder()
         .configFile(configFile)
         .outputFile(outputFile)
         .includedTypeNames(includedTypeNames)
@@ -110,35 +103,35 @@ public class DatamartExporter {
   }
 
   public void export() {
-    EXPORT_CRITERIA.stream().filter(this::isEnabled).forEach(this::steal);
-    mitre.close();
+    EXPORT_CRITERIA.stream().filter(this::isEnabled).forEach(this::export);
+    minimart.close();
     h2.close();
+  }
+
+  private void export(ExportCriteria criteria) {
+    log.info("Exporting {}", criteria.type());
+    h2.getTransaction().begin();
+    criteria
+        .queries()
+        .forEach(
+            query -> {
+              minimart
+                  .createQuery(query, criteria.type())
+                  .getResultStream()
+                  .forEach(
+                      e -> {
+                        minimart.detach(e);
+                        log.info("{}", e);
+                        h2.persist(e);
+                      });
+            });
+    h2.getTransaction().commit();
   }
 
   private boolean isEnabled(ExportCriteria criteria) {
     var exportedTypeName = criteria.type().getSimpleName();
     return includedTypeNames.contains(exportedTypeName)
         || includedTypeNames.contains(exportedTypeName.replace("Entity", ""));
-  }
-
-  private void steal(ExportCriteria criteria) {
-    log.info("Stealing {}", criteria.type());
-    h2.getTransaction().begin();
-    criteria
-        .queries()
-        .forEach(
-            query -> {
-              mitre
-                  .createQuery(query, criteria.type())
-                  .getResultStream()
-                  .forEach(
-                      e -> {
-                        mitre.detach(e);
-                        log.info("{}", e);
-                        h2.persist(e);
-                      });
-            });
-    h2.getTransaction().commit();
   }
 
   private interface ExportCriteria {
