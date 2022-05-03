@@ -23,8 +23,6 @@ import gov.va.api.health.dataquery.service.controller.medicationstatement.Datama
 import gov.va.api.health.dataquery.service.controller.observation.DatamartObservation;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.dataquery.service.controller.procedure.DatamartProcedure;
-import gov.va.api.health.minimartmanager.minimart.DatamartFilenamePatterns;
-import gov.va.api.health.minimartmanager.minimart.MakerUtils;
 import gov.va.api.health.r4.api.resources.DeviceRequest;
 import gov.va.api.health.r4.api.resources.MedicationRequest;
 import gov.va.api.lighthouse.datamart.DatamartCoding;

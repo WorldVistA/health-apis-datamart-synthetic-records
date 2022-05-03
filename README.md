@@ -37,7 +37,7 @@ Augment class to minify datamart subdirectories (squish up the json), by reading
 Example
 ```
 mvn clean install && \
-mvn exec:java -Dexec.mainClass="gov.va.api.health.minimartmanager.minimart.augments.Minifier" \
+mvn exec:java -Dexec.mainClass="gov.va.api.health.minimartmanager.augment.Minifier" \
 -Dexec.args="dm-records-1012659372V317896 dm-records-1012667179V787205" \
 -Dexec.classpathScope="test" -Dexec.cleanupDaemonThreads=false
 ```
