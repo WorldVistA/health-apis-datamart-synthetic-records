@@ -6,10 +6,9 @@
 #
 exportH2() {
   local includedTypes="$1"
-  cd $(dirname $0)
+  cd $BASE_DIR
 
   LAB_PROPERTIES=config/lab.properties
-
   [ ! -f "$LAB_PROPERTIES" ] && echo "Missing $LAB_PROPERTIES" && exit 1
 
   for p in spring.datasource.username spring.datasource.password spring.datasource.url
@@ -19,26 +18,26 @@ exportH2() {
 
   [ -f $LOCAL_DB.mv.db ] && rm -v $LOCAL_DB.*
 
-  mvn \
-    -P'!standard' \
-    -Pexport-h2 \
-    test-compile \
-    -DconfigFile=config/lab.properties \
-    -DoutputFile=$LOCAL_DB \
-    -DexportPatients=32000225,43000199,17,23,1017283180V801730 \
+  mvn clean install -q -P'!standard'
+  mvn exec:java \
+    -Dexec.args="config/lab.properties ./target/mitre" \
+    -Dexec.classpathScope="test" \
+    -Dexec.cleanupDaemonThreads="false" \
+    -Dexec.mainClass="gov.va.api.health.minimartmanager.H2Exporter" \
     -Dexporter.included-types="$includedTypes" \
-    -Dorg.jboss.logging.provider=jdk \
-    -Djava.util.logging.config.file=nope
+    -DexportPatients="17,23,32000225,43000199,1017283180V801730" \
+    -Djava.util.logging.config.file="nope" \
+    -Dorg.jboss.logging.provider="jdk"
 
   cat<<EOF
-You new H2 database is available.
-$LOCAL_DB.mv.db
+Exported H2 database is available: $LOCAL_DB.mv.db
 EOF
 }
 
 openH2() {
   local db="${1:-}"
-  [ -z "${db:-}" ] && db=${LOCAL_DB}
+  cd $BASE_DIR
+  [ -z "${db:-}" ] && db="./target/mitre"
   java -jar ~/.m2/repository/com/h2database/h2/1.4.200/h2-1.4.200.jar -url jdbc:h2:${db} -user sa -password sa
 }
 

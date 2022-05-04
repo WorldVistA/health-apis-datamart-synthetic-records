@@ -1,7 +1,8 @@
 package gov.va.api.health.minimartmanager;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import gov.va.api.health.dataquery.service.controller.allergyintolerance.AllergyIntoleranceEntity;
 import gov.va.api.health.dataquery.service.controller.appointment.AppointmentEntity;
@@ -84,15 +85,18 @@ public class H2Exporter {
       log.error("H2Exporter <application.properties> <h2-database>");
       throw new RuntimeException("Missing arguments");
     }
-    String configFile = args[0];
-    String outputFile = args[1];
+    var configFile = args[0];
+    var outputFile = args[1];
     var includedTypeNames =
-        Set.of(System.getProperty("exporter.included-types", "*").split("\\s*,\\s*"));
+        Stream.of(System.getProperty("exporter.included-types", "*").split("\\s*,\\s*"))
+            .sorted()
+            .distinct()
+            .toList();
     log.info("Included types: {}", includedTypeNames);
     H2Exporter.builder()
         .configFile(configFile)
         .outputFile(outputFile)
-        .includedTypeNames(includedTypeNames)
+        .includedTypeNames(Set.copyOf(includedTypeNames))
         .build()
         .export();
     log.info("All done");
@@ -147,7 +151,7 @@ public class H2Exporter {
 
     @Override
     public Stream<String> queries() {
-      return Stream.of("select e from " + type.getSimpleName() + " e");
+      return Stream.of(String.format("select e from %s e", type.getSimpleName()));
     }
   }
 
@@ -158,12 +162,13 @@ public class H2Exporter {
 
     @Override
     public Stream<String> queries() {
-      String patientsCsv = System.getProperty("exportPatients");
-      assertThat(patientsCsv)
-          .withFailMessage("System property %s must be specified.", "exportPatients")
-          .isNotBlank();
+      var patientsCsv = System.getProperty("exportPatients");
+      checkState(isNotBlank(patientsCsv), "System property exportPatients must be specified");
       return Stream.of(patientsCsv.split(" *, *"))
-          .map(icn -> "select e from " + type.getSimpleName() + " e where e.icn = '" + icn + "'");
+          .map(
+              icn ->
+                  String.format(
+                      "select e from %s e where e.icn = '%s'", type.getSimpleName(), icn));
     }
   }
 }

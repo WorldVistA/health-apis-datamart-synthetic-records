@@ -9,8 +9,8 @@ This application manages the Minimart database.
 Example of rebuilding `minimart-manager` and executing an augment:
 
 ```
-mvn clean install -Dcheckstyle.skip -Djacoco.skip -Dspotbugs.skip && \
-mvn exec:java -Dexec.mainClass="gov.va.api.health.minimartmanager.augment.MedicationReferenceSuffixAugment" \
+mvn clean install -q -P'!standard' && \
+mvn exec:java -Dexec.mainClass="gov.va.api.health.minimartmanager.augment.AllergyIntoleranceSubstanceAugment" \
 -Dexec.classpathScope="test" -Dexec.cleanupDaemonThreads=false
 ```
 
