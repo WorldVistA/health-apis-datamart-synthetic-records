@@ -3,8 +3,6 @@ package gov.va.api.health.minimartmanager;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import gov.va.api.health.minimartmanager.minimart.MinimartRowRemover;
-import gov.va.api.health.minimartmanager.minimart.MitreMinimartMaker;
 import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +67,7 @@ public class PopulateDb {
       log.warn("Only synchronizing {}", resourcesToUpdate);
     }
 
-    MitreMinimartMaker.removeOldEntities(
+    MinimartMaker.removeOldEntities(
         configFilePath,
         List.of(
             MinimartRowRemover.removeBloodPressure552844LoincCode(),
@@ -81,7 +79,7 @@ public class PopulateDb {
           resource,
           importDirectoryPath,
           configFilePath);
-      MitreMinimartMaker.sync(importDirectoryPath, resource, configFilePath);
+      MinimartMaker.sync(importDirectoryPath, resource, configFilePath);
     }
     log.info("DONE");
   }

@@ -13,7 +13,7 @@
   <properties>
     <github.repository-name>health-apis-datamart-synthetic-records</github.repository-name>
     <apache-csv.version>1.8</apache-csv.version>
-    <data-query.version>5.0.0</data-query.version>
+    <data-query.version>5.0.12</data-query.version>
     <datamart-starter.version>5.0.0</datamart-starter.version>
     <git.allowedBranchNames><![CDATA[^(dependabot/.*|qa|staging_lab|lab|PR-[0-9]+|(.*/)?[A-Z]{2,10}-[0-9]+-.*)$]]></git.allowedBranchNames>
     <javafaker.version>1.0.2</javafaker.version>
@@ -21,19 +21,19 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-csv</artifactId>
-      <version>${apache-csv.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>gov.va.api.lighthouse</groupId>
-      <artifactId>lighthouse-starter-datamart</artifactId>
-      <version>${datamart-starter.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.github.javafaker</groupId>
       <artifactId>javafaker</artifactId>
       <version>${javafaker.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${h2.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>${apache-csv.version}</version>
     </dependency>
     <dependency>
       <groupId>gov.va.api.health</groupId>
@@ -42,141 +42,15 @@
       <classifier>library</classifier>
     </dependency>
     <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>${h2.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>gov.va.api.health</groupId>
       <artifactId>vista-fhir-query</artifactId>
       <version>${vista-fhir-query.version}</version>
       <classifier>library</classifier>
     </dependency>
+    <dependency>
+      <groupId>gov.va.api.lighthouse</groupId>
+      <artifactId>lighthouse-starter-datamart</artifactId>
+      <version>${datamart-starter.version}</version>
+    </dependency>
   </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-applications</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}</outputDirectory>
-              <includeArtifactIds>h2,ids,data-query</includeArtifactIds>
-              <stripVersion>true</stripVersion>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>library-jar</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <classifier>library</classifier>
-            </configuration>
-          </execution>
-          <execution>
-            <id>test-jar</id>
-            <phase>package</phase>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-  <profiles>
-    <profile>
-      <!--
-        This profile exists to support the running of the DatamartExporter only. See data-query-tests/export-mitre.sh
-      -->
-      <id>mitre-export</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>export</id>
-                <goals>
-                  <goal>java</goal>
-                </goals>
-                <phase>test-compile</phase>
-                <configuration>
-                  <mainClass>gov.va.api.health.minimartmanager.DatamartExporter</mainClass>
-                  <classpathScope>test</classpathScope>
-                  <cleanupDaemonThreads>false</cleanupDaemonThreads>
-                  <arguments>
-                    <argument>${configFile}</argument>
-                    <argument>${outputFile}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <!--
-      This profile exists to support the running of the mitre-minimart-maker only. See data-query-tests/mitre-minimart-maker.sh
-    -->
-    <profile>
-      <id>mitre-minimart-maker</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>minimart</id>
-                <goals>
-                  <goal>java</goal>
-                </goals>
-                <phase>generate-resources</phase>
-                <configuration>
-                  <mainClass>gov.va.api.health.minimartmanager.minimart.FhirToDatamart</mainClass>
-                  <classpathScope>test</classpathScope>
-                  <arguments>
-                    <argument>${resourceType}</argument>
-                    <argument>${inputDirectory}</argument>
-                    <argument>${idsConfig}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-              <execution>
-                <id>pushToDatabase</id>
-                <goals>
-                  <goal>java</goal>
-                </goals>
-                <phase>generate-resources</phase>
-                <configuration>
-                  <mainClass>gov.va.api.health.minimartmanager.tools.minimart.MitreMinimartMaker</mainClass>
-                  <classpathScope>test</classpathScope>
-                  <arguments>
-                    <argument>${resourceType}</argument>
-                    <argument>${inputDirectory}</argument>
-                    <argument>${configFile}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

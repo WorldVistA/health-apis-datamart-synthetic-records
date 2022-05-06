@@ -13,7 +13,6 @@ import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.sql.DataSource;
 import lombok.Builder;
-import lombok.Singular;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import org.hibernate.jpa.HibernatePersistenceProvider;
@@ -31,15 +30,25 @@ public class PersistenceUnit implements PersistenceUnitInfo {
   PersistenceUnitTransactionType transactionType = PersistenceUnitTransactionType.RESOURCE_LOCAL;
 
   DataSource jtaDataSource;
+
   @Builder.Default List<String> mappingFileNames = emptyList();
+
   @Builder.Default List<URL> jarFileUrls = emptyList();
+
   URL persistenceUnitRootUrl;
-  @Singular List<Class<?>> managedClasses;
+
+  List<Class<?>> managedClasses;
+
   @Builder.Default boolean excludeUnlistedClasses = false;
+
   @Builder.Default SharedCacheMode sharedCacheMode = SharedCacheMode.NONE;
+
   @Builder.Default ValidationMode validationMode = ValidationMode.AUTO;
+
   @Builder.Default Properties properties = new Properties();
+
   @Builder.Default String persistenceXMLSchemaVersion = "2.1";
+
   @Builder.Default ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
   @Override
