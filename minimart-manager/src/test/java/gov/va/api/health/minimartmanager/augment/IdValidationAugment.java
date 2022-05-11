@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.va.api.health.autoconfig.configuration.JacksonConfig;
+import gov.va.api.health.dataquery.service.controller.medicationorder.DatamartMedicationOrder;
 import gov.va.api.health.dataquery.service.controller.patient.DatamartPatient;
 import gov.va.api.health.minimartmanager.DatamartFilenamePatterns;
 import gov.va.api.lighthouse.datamart.HasReplaceableId;
@@ -14,10 +15,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 
 public class IdValidationAugment {
   static final ObjectMapper MAPPER = JacksonConfig.createMapper();
+
+  static final Pattern FILE_ICN_PATTERN = Pattern.compile(".*dm-records-(\\w+).*");
 
   @SneakyThrows
   private static void checkDuplicates() {
@@ -59,6 +63,15 @@ public class IdValidationAugment {
             : ((HasReplaceableId) payload).cdwId();
     var fileId = payloadId.replace(":", "").toUpperCase(Locale.US);
     checkState(file.getName().endsWith(fileId + ".json"), "ID mismatch for %s", file);
+    // TODO support all resources
+    if (payload instanceof DatamartMedicationOrder mo) {
+      var matcher = FILE_ICN_PATTERN.matcher(file.getPath());
+      var found = matcher.find();
+      checkState(found && matcher.groupCount() == 1, "no ICN in path of %s", file);
+      var fileIcn = matcher.group(1);
+      var payloadIcn = mo.patient().reference().get();
+      checkState(fileIcn.equals(payloadIcn), "ICN mismatch for %s", file);
+    }
     MAPPER.writeValue(file, payload);
   }
 
